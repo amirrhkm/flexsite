@@ -72,19 +72,24 @@
   :root[data-theme="dawn"] #banner{background:#fbf0d8;color:#7a5a1e;border-color:#e2c98f}
   #banner.show{display:block}
 
+  /* Phone: not the desktop layout squished — a genuinely vertical layout. */
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
-    .hero{padding:20px 14px}
-    .score .num{font-size:40px}
-    .score{padding:0 5px}
-    .toggle{display:block;width:100%;padding:14px;font-size:15px}
-    .med{width:64px}
-    #shelf{gap:10px}
-  }
-  @media (max-width:380px){
-    .score .num{font-size:34px}
-    .score .u{font-size:9px;letter-spacing:.1em}
-    .pill{min-width:46px;font-size:11px}
+    .hero{padding:18px 14px}
+    /* Scoreboard becomes a vertical stat list: big number + details beside it. */
+    #scores{flex-direction:column}
+    .score{flex:none;flex-direction:row;align-items:center;text-align:left;gap:16px;
+      padding:15px 2px;border-left:none;border-top:1px solid var(--edge)}
+    .score:first-child{border-top:none}
+    .score .num{font-size:46px;flex:0 0 auto;min-width:1.7em;text-align:center}
+    .score .meta{display:flex;flex-direction:column;gap:2px}
+    .score .meta .h{order:-1;font-size:17px}
+    .score .meta .u,.score .meta .t{margin-top:0}
+    /* Full-thumb targets, roomier cards, medals stay fully visible (wrapped). */
+    .toggle{display:block;width:100%;padding:15px;font-size:15px}
+    .hcard{padding:18px}
+    .pill{padding:14px 4px}
+    .med{width:66px}
   }
 </style>
 </head>
@@ -101,9 +106,9 @@
 
   <div class="hero">
     <div id="scores">
-      <div class="score"><div class="num" id="sPrayers">0</div><div class="u">DAY STREAK</div><div class="h">Prayers</div><div class="t"></div></div>
-      <div class="score"><div class="num" id="sSober">0</div><div class="u">DAY STREAK</div><div class="h">Sober</div><div class="t"></div></div>
-      <div class="score"><div class="num" id="sWorkout">0</div><div class="u">ON TARGET</div><div class="h">Workout</div><div class="t"></div></div>
+      <div class="score"><div class="num" id="sPrayers">0</div><div class="meta"><div class="u">DAY STREAK</div><div class="h">Prayers</div><div class="t"></div></div></div>
+      <div class="score"><div class="num" id="sSober">0</div><div class="meta"><div class="u">DAY STREAK</div><div class="h">Sober</div><div class="t"></div></div></div>
+      <div class="score"><div class="num" id="sWorkout">0</div><div class="meta"><div class="u">ON TARGET</div><div class="h">Workout</div><div class="t"></div></div></div>
     </div>
     <div class="case">
       <div class="case-head">
