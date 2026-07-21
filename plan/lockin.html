@@ -85,7 +85,12 @@
     .toggle{display:block;width:100%;padding:15px;font-size:15px}
     .hcard{padding:18px}
     .pill{padding:14px 4px}
-    .med{width:66px}
+    /* Trophy case: one clean swipeable row instead of an uneven wrap. */
+    #shelf{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none;
+      gap:14px;margin:14px -14px 0;padding:2px 14px 10px}
+    #shelf::-webkit-scrollbar{display:none}
+    .med{width:64px;flex:0 0 auto}
     /* Center the week strip within each card. */
     .wklabel{text-align:center}
     .dots{justify-content:center}
