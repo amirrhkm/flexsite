@@ -209,7 +209,7 @@
 
       el('sPrayers').textContent = s.prayers.current;
       el('sSober').textContent = s.sober.current;
-      el('sWorkout').innerHTML = s.workout.current + '<small> wk</small>';
+      el('sWorkout').textContent = s.workout.current;
       el('scores').children[0].querySelector('.t').textContent = tierLabel(s.prayers.forging);
       el('scores').children[1].querySelector('.t').textContent = tierLabel(s.sober.forging);
       el('scores').children[2].querySelector('.t').textContent = s.workout.thisWeekSessions + ' of ' + s.workout.target + ' this week';
