@@ -64,3 +64,72 @@ export function forging(current, tiers) {
   for (const [name, thr] of tiers) if (current < thr) return { tier: name, threshold: thr };
   return null;
 }
+
+export function computeSummary(days, today) {
+  const prayerOrd = new Set();
+  const soberOrd = new Set();
+  const weekCounts = new Map(); // weekStart date -> workout-day count
+  const activeDates = new Set();
+
+  for (const d of days) {
+    activeDates.add(d.date);
+    if (PRAYERS.every((p) => d.prayers && d.prayers[p] === true)) prayerOrd.add(dayNum(d.date));
+    if (d.sober === true) soberOrd.add(dayNum(d.date));
+    if (d.workout === true) {
+      const ws = weekStart(d.date);
+      weekCounts.set(ws, (weekCounts.get(ws) || 0) + 1);
+    }
+  }
+
+  const weekOrd = new Set();
+  for (const [ws, c] of weekCounts) if (c >= WORKOUT_TARGET) weekOrd.add(weekNum(ws));
+
+  const todayOrd = dayNum(today);
+  const wsToday = weekStart(today);
+
+  const dayHabit = (ordSet) => {
+    const runs = runLengths(ordSet);
+    return {
+      current: streakCurrent(ordSet, todayOrd),
+      best: bestRun(ordSet),
+      thisWeek: Array.from({ length: 7 }, (_, i) => ordSet.has(dayNum(addDays(wsToday, i)))),
+      forging: forging(streakCurrent(ordSet, todayOrd), DAY_TIERS),
+      _medals: medalsFromRuns(runs, DAY_TIERS),
+      _comeback: comebackCount(runs, 7),
+    };
+  };
+
+  const prayers = dayHabit(prayerOrd);
+  const sober = dayHabit(soberOrd);
+
+  const wRuns = runLengths(weekOrd);
+  const wCurrent = streakCurrent(weekOrd, weekNum(today));
+  const workout = {
+    current: wCurrent,
+    best: bestRun(weekOrd),
+    thisWeekSessions: weekCounts.get(wsToday) || 0,
+    target: WORKOUT_TARGET,
+    forging: forging(wCurrent, WEEK_TIERS),
+    _medals: medalsFromRuns(wRuns, WEEK_TIERS),
+    _comeback: comebackCount(wRuns, 4),
+  };
+
+  const names = ['bronze', 'silver', 'gold', 'sapphire', 'diamond'];
+  const medals = {};
+  for (const n of names) medals[n] = prayers._medals[n] + sober._medals[n] + workout._medals[n];
+  medals.comeback = prayers._comeback + sober._comeback + workout._comeback;
+  const totalMedals = names.reduce((s, n) => s + medals[n], 0) + medals.comeback;
+
+  const strip = ({ _medals, _comeback, ...rest }) => rest;
+  return {
+    prayers: strip(prayers),
+    sober: strip(sober),
+    workout: strip(workout),
+    medals,
+    totals: {
+      medals: totalMedals,
+      bestStreak: Math.max(prayers.best, sober.best),
+      daysTracked: activeDates.size,
+    },
+  };
+}

@@ -5,6 +5,7 @@ import {
   DAY_TIERS, WEEK_TIERS, PRAYERS, WORKOUT_TARGET, TRACKER_POLL,
   streakCurrent, bestRun, runLengths,
   medalsFromRuns, comebackCount, forging,
+  computeSummary,
 } from './tracker.mjs';
 
 test('constants', () => {
@@ -77,4 +78,48 @@ test('forging returns the next unreached tier, or null when maxed', () => {
   assert.deepEqual(forging(42, DAY_TIERS), { tier: 'gold', threshold: 90 });
   assert.deepEqual(forging(0, DAY_TIERS), { tier: 'bronze', threshold: 7 });
   assert.equal(forging(365, DAY_TIERS), null);
+});
+
+const allPrayers = { subuh: true, zohor: true, asar: true, maghrib: true, isya: true };
+function cleanDay(date, over = {}) {
+  return { date, prayers: allPrayers, workout: true, sober: true, ...over };
+}
+
+test('empty history -> all zeros, forging Bronze', () => {
+  const s = computeSummary([], '2026-07-21');
+  assert.equal(s.prayers.current, 0);
+  assert.equal(s.totals.medals, 0);
+  assert.equal(s.totals.daysTracked, 0);
+  assert.deepEqual(s.prayers.forging, { tier: 'bronze', threshold: 7 });
+  assert.deepEqual(s.prayers.thisWeek, [false, false, false, false, false, false, false]);
+});
+
+test('a clean 8-day run ending today: streak alive, Bronze banked, medals survive a later gap', () => {
+  const days = [];
+  for (let i = 7; i >= 0; i--) days.push(cleanDay(addDays('2026-07-21', -i)));
+  const s = computeSummary(days, '2026-07-21');
+  assert.equal(s.prayers.current, 8);
+  assert.equal(s.prayers.best, 8);
+  assert.equal(s.medals.bronze >= 2, true); // prayers+sober each earned Bronze
+  // now evaluate two days later with no new logs -> current resets, Bronze count unchanged
+  const s2 = computeSummary(days, '2026-07-23');
+  assert.equal(s2.prayers.current, 0);
+  assert.equal(s2.medals.bronze, s.medals.bronze);
+});
+
+test('an incomplete prayer day does not count; sober can still count', () => {
+  const days = [cleanDay('2026-07-21', { prayers: { ...allPrayers, isya: false } })];
+  const s = computeSummary(days, '2026-07-21');
+  assert.equal(s.prayers.current, 0);
+  assert.equal(s.sober.current, 1);
+  assert.equal(s.totals.daysTracked, 1);
+});
+
+test('workout: a week with >=4 sessions is on-target', () => {
+  // Mon..Thu of the week containing 2026-07-21 (week starts 2026-07-20)
+  const days = ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23']
+    .map((d) => ({ date: d, prayers: {}, workout: true, sober: false }));
+  const s = computeSummary(days, '2026-07-23');
+  assert.equal(s.workout.thisWeekSessions, 4);
+  assert.equal(s.workout.current, 1); // one on-target week
 });
