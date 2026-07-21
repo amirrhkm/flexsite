@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gokart Day — August 2026 · Vote</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --asphalt:#14161b;
+    --surface:#1d2027;
+    --surface-2:#232730;
+    --line:#2e333e;
+    --text:#e9ebee;
+    --muted:#9aa1ac;
+    --purple:#b98bff;   /* leading option */
+    --green:#3fd69a;    /* night slots / success */
+    --yellow:#f5c542;   /* caution */
+    --kerb-red:#e23a2e;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--asphalt);
+    color:var(--text);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:110px; /* room for the fixed lock bar */
+  }
+  a{color:var(--purple)}
+  a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{
+    outline:2px solid var(--purple);outline-offset:2px;
+  }
+
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+
+  .kerb{
+    height:10px;
+    background:repeating-linear-gradient(-45deg,var(--kerb-red) 0 18px,#f2f2f2 18px 36px);
+    border-radius:2px;
+  }
+
+  /* ============ header ============ */
+  header.wrap{padding:56px 20px 36px}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:16px;
+  }
+  .eyebrow .live{color:var(--green)}
+  h1{
+    font-size:clamp(36px,7vw,64px);
+    line-height:1;
+    font-weight:800;
+    font-style:italic;
+    text-transform:uppercase;
+    letter-spacing:-.02em;
+  }
+  h1 .accent{color:var(--kerb-red)}
+  .sub{margin-top:14px;max-width:560px;color:var(--muted);font-size:16px}
+  .hero-kerb{margin-top:32px}
+
+  /* ============ sections ============ */
+  section.wrap{padding:40px 20px}
+  h2{
+    font-size:13px;
+    font-family:var(--mono);
+    letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:20px;
+  }
+
+  /* ============ live board ============ */
+  .board{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:24px;
+  }
+  .board-status{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:18px;
+  }
+  .board-status .n{
+    font-family:var(--mono);font-size:40px;font-weight:700;font-style:italic;line-height:1;
+  }
+  .board-status .lbl{color:var(--muted);font-size:14px}
+  .board-cols{
+    display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:18px;
+  }
+  .board-cols .field-label{margin-top:0}
+  .result-group + .result-group .field-label{margin-top:24px}
+  .grid-track{
+    position:relative;
+    display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:34px;gap:10px 24px;
+    background:var(--asphalt);border-radius:10px;
+    padding:22px 14px 14px;
+  }
+  .grid-track::after{ /* start/finish line */
+    content:'';position:absolute;top:6px;left:12px;right:12px;height:8px;
+    background:repeating-conic-gradient(#e9ebee 0% 25%,#14161b 0% 50%) 0 0/8px 8px;
+    border-radius:2px;opacity:.85;
+  }
+  .grid-track::before{ /* track centre line */
+    content:'';position:absolute;top:24px;bottom:12px;left:50%;
+    border-left:2px dashed #3a414d;transform:translateX(-1px);
+  }
+  .grid-slot{
+    position:relative;z-index:1;
+    border:1px dashed #454c58;
+    border-top:3px solid #565d68;
+    border-radius:6px;
+    padding:8px 10px;
+    min-width:0;
+  }
+  .grid-slot:hover{z-index:2}
+  .grid-slot .slot-pos{
+    font-family:var(--mono);font-style:italic;font-weight:700;font-size:13px;
+    color:var(--muted);
+  }
+  .grid-slot .slot-name{
+    font-weight:600;font-size:14px;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .slot-tip{
+    position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;
+    opacity:0;pointer-events:none;
+    z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.45);
+  }
+  .slot-tip .tip-track{font-size:13px;font-weight:600;white-space:nowrap}
+  .slot-tip .tip-dates{
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+    margin-top:2px;white-space:nowrap;
+  }
+  .grid-slot:hover .slot-tip,
+  .grid-slot:focus .slot-tip,
+  .grid-slot:focus-visible .slot-tip{opacity:1}
+  @media (prefers-reduced-motion:no-preference){
+    .slot-tip{transition:opacity .12s ease}
+  }
+  .grid-slot.filled{
+    border-style:solid;border-color:var(--line);
+    border-top:3px solid var(--kerb-red);
+    background:var(--surface-2);
+  }
+  .grid-slot.filled.pole{border-top-color:var(--purple)}
+  .grid-slot.filled.pole .slot-pos{color:var(--purple)}
+  .grid-slot.filled .slot-pos{color:var(--kerb-red)}
+  #grid-empty{color:var(--muted);font-size:13px;margin-top:12px}
+  .bar-row{margin-bottom:12px}
+  .bar-row .bar-head{
+    display:flex;justify-content:space-between;gap:12px;
+    font-size:13px;margin-bottom:4px;
+  }
+  .bar-row .bar-head .cnt{font-family:var(--mono);color:var(--muted)}
+  .bar-row.lead .bar-head .cnt{color:var(--purple)}
+  .bar{
+    height:8px;background:var(--asphalt);border-radius:4px;overflow:hidden;
+  }
+  .bar i{
+    display:block;height:100%;width:0;
+    background:var(--surface-2);border-radius:4px;
+  }
+  .bar-row.lead .bar i{background:var(--purple)}
+  @media (prefers-reduced-motion:no-preference){
+    .bar i{transition:width .4s ease}
+  }
+
+  /* ============ ballot ============ */
+  .field-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);margin:28px 0 10px;
+  }
+  .field-label .step{color:var(--kerb-red);margin-right:8px}
+
+  /* ballot step tabs */
+  .tabs{
+    position:sticky;top:12px;z-index:9;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;margin-bottom:20px;
+  }
+  .tab{
+    background:none;border:none;border-right:1px solid var(--line);
+    color:var(--muted);font:inherit;cursor:pointer;
+    padding:12px 16px;text-align:left;min-width:0;
+  }
+  .tab:last-child{border-right:none}
+  .tab .t-step{font-family:var(--mono);font-size:11px;color:var(--kerb-red);margin-right:8px}
+  .tab .t-title{font-weight:700;font-size:14px}
+  .tab[aria-selected="true"]{
+    color:var(--text);background:var(--surface-2);
+    box-shadow:inset 0 -3px 0 var(--kerb-red);
+  }
+  .tab .t-value{
+    display:block;font-family:var(--mono);font-size:11px;color:var(--green);
+    margin-top:2px;min-height:14px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .panel-next{
+    margin-top:18px;display:inline-block;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);padding:10px 18px;font:inherit;font-size:14px;cursor:pointer;
+  }
+  .panel-next:hover{border-color:var(--purple)}
+  @media (max-width:640px){
+    .tab{padding:10px 10px}
+    .tab .t-title{font-size:13px}
+  }
+  .name-input{
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);padding:11px 14px;font:inherit;width:100%;max-width:320px;
+  }
+
+  .option-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:10px;overflow:hidden;
+  }
+  .option-card.selected{border-color:var(--purple)}
+  .option-head{
+    display:grid;grid-template-columns:22px 1fr auto;gap:14px;align-items:start;
+    width:100%;text-align:left;background:none;border:none;color:inherit;
+    font:inherit;padding:16px 18px;cursor:pointer;
+  }
+  .radio{
+    width:18px;height:18px;border-radius:50%;
+    border:2px solid var(--muted);margin-top:3px;flex:none;
+  }
+  .selected .radio{border-color:var(--purple);background:radial-gradient(circle,var(--purple) 0 5px,transparent 6px)}
+  .option-name{font-weight:700;font-size:16px}
+  .option-meta{color:var(--muted);font-size:13px;margin-top:2px}
+  .option-price{text-align:right}
+  .option-price .amount{font-family:var(--mono);font-weight:700;font-size:17px}
+  .option-price .per{display:block;font-size:12px;color:var(--muted)}
+  .option-tags{padding:0 18px 4px 54px}
+  .tag{
+    display:inline-block;
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    padding:2px 9px;border-radius:99px;margin:0 6px 8px 0;
+  }
+  .tag.best{background:rgba(185,139,255,.14);color:var(--purple);border:1px solid rgba(185,139,255,.4)}
+  .tag.night{background:rgba(63,214,154,.12);color:var(--green);border:1px solid rgba(63,214,154,.35)}
+
+  details.option-details{border-top:1px solid var(--line)}
+  details.option-details summary{
+    list-style:none;cursor:pointer;
+    font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);padding:10px 18px;
+  }
+  details.option-details summary::-webkit-details-marker{display:none}
+  details.option-details summary::before{content:"▸ ";color:var(--kerb-red)}
+  details[open].option-details summary::before{content:"▾ "}
+  .details-body{padding:4px 18px 18px}
+  .specs{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px 20px;
+  }
+  .spec .label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:2px;
+  }
+  .spec .value{font-size:14px;font-weight:600;line-height:1.4}
+  .spec .value.tbc{color:var(--muted);font-weight:400}
+  .details-body .note{margin-top:14px;font-size:14px;color:var(--muted)}
+  .layout{margin-top:16px}
+  .layout img{
+    display:block;width:100%;max-width:560px;height:auto;
+    background:#fff;border-radius:8px;border:1px solid var(--line);
+  }
+  .layout figcaption{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);margin-top:8px;
+  }
+  .layout figcaption a{color:var(--muted)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    background:var(--surface);border:1px solid var(--line);border-radius:99px;
+    color:var(--text);padding:9px 16px;font:inherit;font-size:14px;cursor:pointer;
+  }
+  .chip[aria-pressed="true"]{
+    border-color:var(--purple);color:var(--purple);background:rgba(185,139,255,.12);
+  }
+  .chip .night-dot{color:var(--green);font-family:var(--mono);font-size:12px;margin-left:6px}
+  .caution{
+    margin-top:16px;
+    background:rgba(245,197,66,.08);
+    border:1px solid rgba(245,197,66,.35);
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:13px;color:var(--text);
+  }
+  .caution b{color:var(--yellow)}
+
+  /* ============ lock bar ============ */
+  .lockbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;
+    background:rgba(20,22,27,.92);
+    backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);
+  }
+  .lockbar-inner{
+    max-width:880px;margin:0 auto;padding:14px 20px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .lockbar .your-vote{flex:1;min-width:0}
+  .lockbar .your-vote .lbl{
+    font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .lockbar .your-vote .val{
+    font-size:14px;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .lockbar .your-vote .val .pending{color:var(--muted);font-weight:400}
+  .vote-submit{
+    background:var(--kerb-red);color:#fff;border:none;border-radius:8px;
+    padding:12px 22px;font:inherit;font-weight:700;font-style:italic;
+    text-transform:uppercase;letter-spacing:.06em;cursor:pointer;flex:none;
+  }
+  .vote-submit:disabled{opacity:.45;cursor:default}
+  .vote-status{font-size:13px;color:var(--muted);flex:none;max-width:220px}
+  .vote-status.ok{color:var(--green)}
+  .vote-status.err{color:var(--yellow)}
+
+  /* ============ footer ============ */
+  footer.wrap{padding:56px 20px 64px;color:var(--muted);font-size:13px}
+
+  @media (max-width:640px){
+    .board-cols{grid-template-columns:1fr}
+    .option-head{grid-template-columns:22px 1fr}
+    .option-price{grid-column:2;text-align:left;margin-top:6px}
+    .option-price .per{display:inline;margin-left:6px}
+    .option-tags{padding-left:18px}
+    .lockbar-inner{flex-wrap:wrap;gap:10px}
+    .vote-status{max-width:none;width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <p class="eyebrow"><span class="live">● live ballot</span> · gokart day · bangi crew</p>
+  <h1>Where are we<br>racing<span class="accent">?</span></h1>
+  <p class="sub">Pick a track and a date for our August 2026 gokart day. Results update as votes come in — expand any option for the full spec sheet.</p>
+  <div class="kerb hero-kerb" aria-hidden="true"></div>
+</header>
+
+<section class="wrap" id="standings">
+  <h2>Live standings</h2>
+  <div class="board">
+    <div class="board-status">
+      <span class="n" id="vote-count">–</span>
+      <span class="lbl" id="board-msg">loading votes…</span>
+    </div>
+    <div class="board-cols">
+      <div>
+        <div class="result-group">
+          <p class="field-label">Track</p>
+          <div id="track-results"></div>
+        </div>
+        <div class="result-group">
+          <p class="field-label">Date</p>
+          <div id="date-results"></div>
+        </div>
+      </div>
+      <div>
+        <p class="field-label">Starting grid</p>
+        <div class="grid-track" id="grid-track"></div>
+        <p id="grid-empty">Grid is empty — first to vote takes pole.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="ballot">
+  <h2>Your ballot</h2>
+  <p style="font-size:14px;color:var(--muted);margin:-8px 0 20px">Pick one track, and every date that works for you.</p>
+
+  <div class="tabs" role="tablist" aria-label="Ballot steps">
+    <button class="tab" type="button" role="tab" id="tab-name" aria-selected="true" aria-controls="panel-name">
+      <span class="t-step">01</span><span class="t-title">Name</span>
+      <span class="t-value" id="tabval-name"></span>
+    </button>
+    <button class="tab" type="button" role="tab" id="tab-track" aria-selected="false" aria-controls="panel-track">
+      <span class="t-step">02</span><span class="t-title">Track</span>
+      <span class="t-value" id="tabval-track"></span>
+    </button>
+    <button class="tab" type="button" role="tab" id="tab-date" aria-selected="false" aria-controls="panel-date">
+      <span class="t-step">03</span><span class="t-title">Dates</span>
+      <span class="t-value" id="tabval-date"></span>
+    </button>
+  </div>
+
+  <div class="panel" id="panel-name" role="tabpanel" aria-labelledby="tab-name">
+    <p class="field-label" style="margin-top:0">Your name</p>
+    <input class="name-input" id="voter-name" maxlength="40" placeholder="Charles Leclerc" autocomplete="name">
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">One vote per name — voting again with the same name updates your pick.</p>
+    <button class="panel-next" type="button" data-next="track">Next: pick a track →</button>
+  </div>
+
+  <div class="panel" id="panel-track" role="tabpanel" aria-labelledby="tab-track" hidden>
+    <div id="track-options" role="radiogroup" aria-label="Track options"></div>
+    <button class="panel-next" type="button" data-next="date">Next: pick your dates →</button>
+  </div>
+
+  <div class="panel" id="panel-date" role="tabpanel" aria-labelledby="tab-date" hidden>
+    <div class="chips" id="date-chips" role="group" aria-label="Date options"></div>
+    <div class="caution">
+      <b>Yellow flag:</b> Sat 29 – Mon 31 Aug is the Merdeka long weekend (holiday on Mon 31). If Fri 28 wins, we book early — and we skip 29–30 entirely.
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="kerb" aria-hidden="true"></div>
+</footer>
+
+<div class="lockbar">
+  <div class="lockbar-inner">
+    <div class="your-vote">
+      <div class="lbl">Your vote</div>
+      <div class="val" id="vote-summary"><span class="pending">Add your name, a track and a date</span></div>
+    </div>
+    <p class="vote-status" id="vote-status"></p>
+    <button class="vote-submit" id="vote-submit" type="button" disabled>Lock it in</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var POLL = 'gokart-aug-2026';
+
+  var TRACKS = [
+    {
+      value: 'LYL Circuit',
+      name: 'LYL International Karting Circuit',
+      meta: '9 HP SodiKart · 1.5 km · ~20 min from Bangi',
+      amount: 'RM70', per: 'per 10-min session',
+      tags: [['night', 'Friday night OK']],
+      specs: [
+        ['Kart', 'SodiKart 270cc · 9 HP'],
+        ['Track length', '1.5 km (Asia’s longest)'],
+        ['Session', '10 min'],
+        ['Min height', '140 cm · age 10+'],
+        ['Hours', '12 pm – 12 am daily'],
+        ['Location', 'Sungai Long, Cheras'],
+        ['From Bangi', '~20 min'],
+        ['≈ Cost / pax', 'RM220 (3 sessions + gear)'],
+      ],
+      note: 'Closest track to Bangi. The 13 HP 390cc (RM90) needs a racing license or a sub-1:35 lap in the 270cc first, so we’d all start on the 9 HP. Gear rental: balaclava RM8, gloves RM3.',
+      layout: {
+        src: 'https://thesmartlocal.com/wp-content/uploads/2025/09/LYL-International-Karting-Circuit-track.png',
+        alt: 'Aerial night view of the full LYL circuit layout',
+        caption: 'Circuit aerial · photo: TheSmartLocal',
+        link: 'https://thesmartlocal.com/read/lyl-international-karting-circuit-malaysia/',
+      },
+    },
+    {
+      value: 'RUD Sepang',
+      name: 'RUD Karting Sepang',
+      meta: '~13 HP B-Stage 3 · 1.25 km · ~25 min from Bangi',
+      amount: 'RM120', per: 'per 12-min session',
+      tags: [['night', 'Friday night OK']],
+      specs: [
+        ['Kart', 'B-Stage 3 · ~13 HP'],
+        ['Track length', '1.25 km outdoor'],
+        ['Session', '12 min'],
+        ['Min height', 'TBC — ask when booking', true],
+        ['Hours', '10 am – 12 am daily'],
+        ['Location', 'Sepang F1 complex (kart circuit)'],
+        ['From Bangi', '~25 min'],
+        ['≈ Cost / pax', 'RM360 (3 sessions)'],
+      ],
+      note: 'Confirmed: no 10 HP solo kart here — B-Stage 3 is the entry kart. This is the dedicated kart circuit inside the Sepang F1 complex (not the grand prix track itself) — built 1999, hosts international karting events, now operated by RUD. Most "real racing" feel of the five. Twin (2-seater, 10 HP) is RM75 if anyone wants a passenger lap.',
+      layout: {
+        src: 'https://www.racingunderdog.com/wp-content/uploads/2026/04/SEPANG169-%E6%8B%B7%E8%B4%9D-scaled.jpg',
+        alt: 'RUD Sepang International Track layout map — 1,250 m, 11 corners',
+        caption: 'Official layout map · Racing Underdog',
+        link: 'https://www.racingunderdog.com/sepang-race-track-rud/',
+      },
+    },
+    {
+      value: 'RUD Gamuda Cove',
+      name: 'RUD Karting Gamuda Cove',
+      meta: '10 HP B-Super Stage · 650 m · ~30 min from Bangi',
+      amount: 'RM75', per: 'per session · 3 for RM195',
+      tags: [['best', 'Best value'], ['night', 'Friday night OK']],
+      specs: [
+        ['Kart', 'B-Super Stage · 10 HP'],
+        ['Track length', '650 m · 23 corners'],
+        ['Session', '~10 min (assumed)', true],
+        ['Min height', '150 cm'],
+        ['Hours', '10 am – 12 am (Fri–Sat to 2 am)'],
+        ['Location', 'Discovery Park, Kuala Langat'],
+        ['From Bangi', '~30 min'],
+        ['≈ Cost / pax', 'RM195 (3-session package)'],
+      ],
+      note: 'Cheapest 10 HP seat time of the group, and the 3-session package (RM195) is the best deal on this list. Also has slower e-karts if anyone brings kids.',
+      layout: {
+        src: 'https://www.racingunderdog.com/wp-content/uploads/2026/05/IMG_4566.JPG-scaled.jpeg',
+        alt: 'RUD Karting Gamuda Cove layout map — 650 m, 23 corners',
+        caption: 'Official layout map · Racing Underdog',
+        link: 'https://www.racingunderdog.com/rud-gamuda-cove/',
+      },
+    },
+    {
+      value: 'RUD KL (Puchong)',
+      name: 'RUD International Circuit (KL)',
+      meta: 'HP TBC · 1.58 km · ~30 min from Bangi',
+      amount: 'RM79', per: 'per session · 3 for RM195',
+      tags: [['night', 'Night track']],
+      specs: [
+        ['Kart', 'HP TBC · up to 80 km/h', true],
+        ['Track length', '1.58 km · 28 corners'],
+        ['Session', '~10 min (assumed)', true],
+        ['Min height', 'TBC — ask when booking', true],
+        ['Hours', '5 pm – 2 am daily'],
+        ['Location', 'Puchong Gateway, Puchong'],
+        ['From Bangi', '~30 min'],
+        ['≈ Cost / pax', 'RM195 (3-session package)'],
+      ],
+      note: 'Brand-new circuit (opened 2026). Evening-only hours make it the natural pick if we go with a Friday-night slot. Kart HP tier not published — worth a WhatsApp to confirm before booking.',
+      layout: {
+        src: 'https://www.racingunderdog.com/wp-content/uploads/2026/04/033016-9RUD-INTERNATIONAL-CIRCUIT-KL-scaled.jpg',
+        alt: 'RUD International Circuit KL layout map — 1,580 m, 28 corners',
+        caption: 'Official layout map · Racing Underdog',
+        link: 'https://www.racingunderdog.com/rud-international-circuit-kl/',
+      },
+    },
+    {
+      value: 'Pinnacle @ Speedway PLUS',
+      name: 'Pinnacle Kart @ Speedway PLUS',
+      meta: '~9.5 HP Sodi · 990 m · ~35 min from Bangi',
+      amount: 'RM55', per: 'per 10-min session',
+      tags: [['best', 'Cheapest session']],
+      specs: [
+        ['Kart', 'Sodi · ~9.5 HP Honda 4-stroke'],
+        ['Track length', '990 m'],
+        ['Session', '10 min'],
+        ['Min height', 'TBC · age 7+ listed', true],
+        ['Hours', '2–10 pm wkdays · 12–10 pm wkends'],
+        ['Location', 'KM8 ELITE Hwy, USJ Subang Jaya'],
+        ['From Bangi', '~35 min'],
+        ['≈ Cost / pax', 'RM165 (3 sessions)'],
+      ],
+      note: 'Cheapest seat time on this list, right off the ELITE highway from Bangi. Faster T4 karts (~15 HP) around RM120. Closes at 10 pm — a Friday session means arriving by ~8 pm — and recent reviews flag dim night lighting and patchy upkeep, so it’s better as a daytime pick.',
+      layout: {
+        src: 'https://kartingasiacom.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2024/12/27221921/layout-malaysia-speedwayplus.svg',
+        alt: 'Speedway PLUS circuit layout map',
+        caption: 'Layout map · KartingAsia',
+        link: 'https://kartingasia.com/kart_tracks/malaysia/speedway-plus/2/',
+      },
+    },
+  ];
+
+  var DATES = [
+    { value: 'Fri 14 Aug (night)', night: true },
+    { value: 'Sat 15 Aug' },
+    { value: 'Sun 16 Aug' },
+    { value: 'Fri 21 Aug (night)', night: true },
+    { value: 'Sat 22 Aug' },
+    { value: 'Sun 23 Aug' },
+    { value: 'Fri 28 Aug (night)', night: true },
+  ];
+
+  var apiUrl = null;
+  var picked = { track: null, dates: [] };
+
+  function sortedDates() {
+    var order = DATES.map(function (d) { return d.value; });
+    return picked.dates.slice().sort(function (a, b) {
+      return order.indexOf(a) - order.indexOf(b);
+    });
+  }
+  var els = {
+    name: document.getElementById('voter-name'),
+    trackOptions: document.getElementById('track-options'),
+    dateChips: document.getElementById('date-chips'),
+    trackResults: document.getElementById('track-results'),
+    dateResults: document.getElementById('date-results'),
+    gridTrack: document.getElementById('grid-track'),
+    gridEmpty: document.getElementById('grid-empty'),
+    voteCount: document.getElementById('vote-count'),
+    boardMsg: document.getElementById('board-msg'),
+    summary: document.getElementById('vote-summary'),
+    submit: document.getElementById('vote-submit'),
+    status: document.getElementById('vote-status'),
+  };
+
+  /* ---- ballot step tabs ---- */
+  var tabs = {}, tabVals = {}, panels = {};
+  ['name', 'track', 'date'].forEach(function (k) {
+    tabs[k] = document.getElementById('tab-' + k);
+    tabVals[k] = document.getElementById('tabval-' + k);
+    panels[k] = document.getElementById('panel-' + k);
+    tabs[k].addEventListener('click', function () { switchTab(k); });
+  });
+  function switchTab(key) {
+    Object.keys(tabs).forEach(function (k) {
+      tabs[k].setAttribute('aria-selected', k === key ? 'true' : 'false');
+      panels[k].hidden = k !== key;
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.panel-next'), function (btn) {
+    btn.addEventListener('click', function () { switchTab(btn.dataset.next); });
+  });
+
+  /* ---- ballot: track cards ---- */
+  TRACKS.forEach(function (t) {
+    var card = document.createElement('div');
+    card.className = 'option-card';
+    card.dataset.value = t.value;
+
+    var head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'option-head';
+    head.setAttribute('role', 'radio');
+    head.setAttribute('aria-checked', 'false');
+    var radio = document.createElement('span');
+    radio.className = 'radio';
+    radio.setAttribute('aria-hidden', 'true');
+    var mid = document.createElement('span');
+    var nm = document.createElement('span');
+    nm.className = 'option-name';
+    nm.textContent = t.name;
+    var meta = document.createElement('span');
+    meta.className = 'option-meta';
+    meta.textContent = t.meta;
+    mid.appendChild(nm);
+    mid.appendChild(document.createElement('br'));
+    mid.appendChild(meta);
+    var price = document.createElement('span');
+    price.className = 'option-price';
+    price.innerHTML = '<span class="amount"></span><span class="per"></span>';
+    price.querySelector('.amount').textContent = t.amount;
+    price.querySelector('.per').textContent = t.per;
+    head.appendChild(radio);
+    head.appendChild(mid);
+    head.appendChild(price);
+    head.addEventListener('click', function () { selectTrack(t.value); });
+    card.appendChild(head);
+
+    if (t.tags.length) {
+      var tags = document.createElement('div');
+      tags.className = 'option-tags';
+      t.tags.forEach(function (tg) {
+        var s = document.createElement('span');
+        s.className = 'tag ' + tg[0];
+        s.textContent = tg[1];
+        tags.appendChild(s);
+      });
+      card.appendChild(tags);
+    }
+
+    var det = document.createElement('details');
+    det.className = 'option-details';
+    var sum = document.createElement('summary');
+    sum.textContent = 'Specs & details';
+    det.appendChild(sum);
+    var body = document.createElement('div');
+    body.className = 'details-body';
+    var grid = document.createElement('div');
+    grid.className = 'specs';
+    t.specs.forEach(function (sp) {
+      var d = document.createElement('div');
+      d.className = 'spec';
+      var l = document.createElement('div');
+      l.className = 'label';
+      l.textContent = sp[0];
+      var v = document.createElement('div');
+      v.className = 'value' + (sp[2] ? ' tbc' : '');
+      v.textContent = sp[1];
+      d.appendChild(l);
+      d.appendChild(v);
+      grid.appendChild(d);
+    });
+    var note = document.createElement('p');
+    note.className = 'note';
+    note.textContent = t.note;
+    body.appendChild(grid);
+    body.appendChild(note);
+    if (t.layout) {
+      var fig = document.createElement('figure');
+      fig.className = 'layout';
+      var img = document.createElement('img');
+      img.src = t.layout.src;
+      img.alt = t.layout.alt;
+      img.loading = 'lazy';
+      var cap = document.createElement('figcaption');
+      var capLink = document.createElement('a');
+      capLink.href = t.layout.link;
+      capLink.target = '_blank';
+      capLink.rel = 'noopener';
+      capLink.textContent = t.layout.caption + ' ↗';
+      cap.appendChild(capLink);
+      img.addEventListener('error', function () {
+        img.remove();
+        capLink.textContent = 'View track layout on source site ↗';
+      });
+      fig.appendChild(img);
+      fig.appendChild(cap);
+      body.appendChild(fig);
+    }
+    det.appendChild(body);
+    card.appendChild(det);
+
+    els.trackOptions.appendChild(card);
+  });
+
+  function selectTrack(value) {
+    picked.track = value;
+    Array.prototype.forEach.call(els.trackOptions.children, function (card) {
+      var on = card.dataset.value === value;
+      card.classList.toggle('selected', on);
+      card.querySelector('.option-head').setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    updateBar();
+  }
+
+  /* ---- ballot: date chips ---- */
+  DATES.forEach(function (d) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.setAttribute('role', 'checkbox');
+    b.setAttribute('aria-pressed', 'false');
+    b.dataset.value = d.value;
+    b.textContent = d.value.replace(' (night)', '');
+    if (d.night) {
+      var dot = document.createElement('span');
+      dot.className = 'night-dot';
+      dot.textContent = 'night';
+      b.appendChild(dot);
+    }
+    b.addEventListener('click', function () {
+      var i = picked.dates.indexOf(d.value);
+      if (i === -1) picked.dates.push(d.value);
+      else picked.dates.splice(i, 1);
+      b.setAttribute('aria-pressed', i === -1 ? 'true' : 'false');
+      updateBar();
+    });
+    els.dateChips.appendChild(b);
+  });
+
+  /* ---- live board ---- */
+  function makeResultRows(container, options) {
+    options.forEach(function (value) {
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      row.dataset.value = value;
+      row.innerHTML = '<div class="bar-head"><span class="opt"></span><span class="cnt">0</span></div><div class="bar"><i></i></div>';
+      row.querySelector('.opt').textContent = value.replace(' (night)', '');
+      container.appendChild(row);
+    });
+  }
+  makeResultRows(els.trackResults, TRACKS.map(function (t) { return t.value; }));
+  makeResultRows(els.dateResults, DATES.map(function (d) { return d.value; }));
+
+  // Staggered F1-style grid: P1 front right, P2 back left, P3 right, P4 left…
+  // Slot boxes are always drawn, empty or not.
+  function drawGrid(sorted) {
+    els.gridTrack.innerHTML = '';
+    var slots = Math.max(12, sorted.length + (sorted.length % 2 ? 1 : 2));
+    for (var n = 1; n <= slots; n++) {
+      var v = sorted[n - 1];
+      var slot = document.createElement('div');
+      slot.className = 'grid-slot' + (v ? ' filled' : '') + (n === 1 ? ' pole' : '');
+      slot.style.gridColumn = n % 2 === 1 ? '2' : '1';
+      slot.style.gridRow = n + ' / span 2';
+      var pos = document.createElement('div');
+      pos.className = 'slot-pos';
+      pos.textContent = 'P' + n;
+      slot.appendChild(pos);
+      if (v) {
+        var name = document.createElement('div');
+        name.className = 'slot-name';
+        name.textContent = v.voter;
+        slot.appendChild(name);
+
+        var datesTxt = (v.dates || []).map(function (d) {
+          return d.replace(' (night)', '').replace(' Aug', '');
+        }).join(', ');
+        var tip = document.createElement('div');
+        tip.className = 'slot-tip';
+        var tipTrack = document.createElement('div');
+        tipTrack.className = 'tip-track';
+        tipTrack.textContent = v.track;
+        var tipDates = document.createElement('div');
+        tipDates.className = 'tip-dates';
+        tipDates.textContent = datesTxt;
+        tip.appendChild(tipTrack);
+        tip.appendChild(tipDates);
+        slot.appendChild(tip);
+
+        slot.tabIndex = 0;
+        slot.setAttribute('aria-label', v.voter + ' — ' + v.track + ' · ' + datesTxt);
+      }
+      els.gridTrack.appendChild(slot);
+    }
+    els.gridEmpty.hidden = sorted.length > 0;
+  }
+  drawGrid([]);
+
+  function renderGroup(container, counts, total) {
+    var rows = Array.prototype.slice.call(container.children);
+    var max = 0;
+    rows.forEach(function (r) { max = Math.max(max, counts[r.dataset.value] || 0); });
+    rows.forEach(function (r) {
+      var n = counts[r.dataset.value] || 0;
+      r.querySelector('.cnt').textContent = String(n);
+      r.querySelector('.bar i').style.width = total ? Math.max(n / total * 100, n ? 6 : 0) + '%' : '0%';
+      r.classList.toggle('lead', n > 0 && n === max);
+    });
+    rows.sort(function (a, b) {
+      return (counts[b.dataset.value] || 0) - (counts[a.dataset.value] || 0);
+    }).forEach(function (r) { container.appendChild(r); });
+  }
+
+  function render(state) {
+    var total = state.votes.length;
+    els.voteCount.textContent = String(total);
+    els.boardMsg.textContent = total === 0
+      ? 'votes in — grid is empty, be the first'
+      : 'vote' + (total > 1 ? 's' : '') + ' in';
+    renderGroup(els.trackResults, state.tracks, total);
+    renderGroup(els.dateResults, state.dates, total);
+    drawGrid(state.votes.slice().sort(function (a, b) {
+      return String(a.createdAt || a.updatedAt || '').localeCompare(String(b.createdAt || b.updatedAt || ''));
+    }));
+  }
+
+  /* ---- lock bar ---- */
+  function updateBar() {
+    var name = els.name.value.trim();
+    var dateLabel = sortedDates().map(function (d) {
+      return d.replace(' (night)', '');
+    }).join(', ');
+    var shortDates = sortedDates().map(function (d) {
+      return d.replace(' (night)', '').replace(' Aug', '');
+    });
+    tabVals.name.textContent = name;
+    tabVals.track.textContent = picked.track || '';
+    tabVals.date.textContent = shortDates.length > 2
+      ? shortDates.length + ' dates'
+      : shortDates.join(', ');
+    if (name && picked.track && picked.dates.length) {
+      els.summary.textContent = name + ' — ' + picked.track + ' · ' + dateLabel;
+    } else {
+      var missing = [];
+      if (!name) missing.push('your name');
+      if (!picked.track) missing.push('a track');
+      if (!picked.dates.length) missing.push('at least one date');
+      els.summary.innerHTML = '<span class="pending"></span>';
+      els.summary.firstChild.textContent = 'Pick ' + missing.join(', ');
+    }
+    els.submit.disabled = !(apiUrl && name && picked.track && picked.dates.length);
+  }
+
+  function setStatus(msg, cls) {
+    els.status.textContent = msg;
+    els.status.className = 'vote-status' + (cls ? ' ' + cls : '');
+  }
+
+  function refresh() {
+    fetch(apiUrl + '?poll=' + encodeURIComponent(POLL))
+      .then(function (r) { return r.json(); })
+      .then(render)
+      .catch(function () {
+        els.boardMsg.textContent = 'couldn’t load votes — refresh to retry';
+      });
+  }
+
+  function submitVote() {
+    els.submit.disabled = true;
+    setStatus('Submitting…');
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ poll: POLL, voter: els.name.value.trim(), track: picked.track, dates: sortedDates() }),
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(function (state) {
+        try { localStorage.setItem('voterName', els.name.value.trim()); } catch (e) {}
+        render(state);
+        setStatus('Locked in ✓', 'ok');
+      })
+      .catch(function () { setStatus('Didn’t go through — try again.', 'err'); })
+      .then(updateBar);
+  }
+
+  try { els.name.value = localStorage.getItem('voterName') || ''; } catch (e) {}
+  els.name.addEventListener('input', updateBar);
+  els.name.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && els.name.value.trim()) switchTab('track');
+  });
+  els.submit.addEventListener('click', submitVote);
+  updateBar();
+
+  // Event-based freshness: fetch on load, after voting (POST returns the new
+  // state), and when the tab regains focus. No timers.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && apiUrl) refresh();
+  });
+
+  fetch('./config.json')
+    .then(function (r) { return r.json(); })
+    .then(function (cfg) {
+      apiUrl = cfg.voteApiUrl;
+      updateBar();
+      refresh();
+    })
+    .catch(function () {
+      els.voteCount.textContent = '–';
+      els.boardMsg.textContent = 'live votes appear on the hosted version';
+      setStatus('Voting works on the shared link only.');
+    });
+})();
+</script>
+</body>
+</html>
