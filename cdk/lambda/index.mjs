@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { TRACKER_POLL, PRAYERS, computeSummary, todayInMYT, addDays } from './tracker.mjs';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE = process.env.TABLE_NAME;
@@ -44,12 +45,43 @@ const state = async (poll) => {
   };
 };
 
+export function validTrackerDate(date, nowMs) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const today = todayInMYT(nowMs);
+  return date === today || date === addDays(today, -1);
+}
+export function normalizePrayers(input) {
+  const out = {};
+  for (const p of PRAYERS) out[p] = input && input[p] === true;
+  return out;
+}
+async function trackerDays(poll) {
+  const { Items = [] } = await ddb.send(new QueryCommand({
+    TableName: TABLE,
+    KeyConditionExpression: '#p = :p',
+    ExpressionAttributeNames: { '#p': 'poll' },
+    ExpressionAttributeValues: { ':p': poll },
+  }));
+  return Items.map((it) => ({
+    date: it.voter,
+    prayers: it.prayers || {},
+    workout: it.workout === true,
+    sober: it.sober === true,
+  })).sort((a, b) => a.date.localeCompare(b.date));
+}
+async function trackerState(poll) {
+  const days = await trackerDays(poll);
+  const today = todayInMYT(Date.now());
+  return { days, today, summary: computeSummary(days, today) };
+}
+
 export const handler = async (event) => {
   const method = event.requestContext?.http?.method;
   try {
     if (method === 'GET') {
       const poll = clean(event.queryStringParameters?.poll, 60);
       if (!poll) return resp(400, { error: 'poll query param is required' });
+      if (poll === TRACKER_POLL) return resp(200, await trackerState(poll));
       return resp(200, await state(poll));
     }
 
@@ -64,6 +96,25 @@ export const handler = async (event) => {
         return resp(400, { error: 'invalid JSON body' });
       }
       const poll = clean(body.poll, 60);
+      if (poll === TRACKER_POLL) {
+        if (!validTrackerDate(body.date, Date.now())) {
+          return resp(400, { error: 'date must be today or yesterday (MYT)' });
+        }
+        const now = new Date().toISOString();
+        await ddb.send(new UpdateCommand({
+          TableName: TABLE,
+          Key: { poll, voter: body.date },
+          UpdateExpression:
+            'SET prayers = :pr, workout = :w, sober = :s, updatedAt = :u, createdAt = if_not_exists(createdAt, :u)',
+          ExpressionAttributeValues: {
+            ':pr': normalizePrayers(body.prayers),
+            ':w': body.workout === true,
+            ':s': body.sober === true,
+            ':u': now,
+          },
+        }));
+        return resp(200, await trackerState(poll));
+      }
       const voter = clean(body.voter, 40);
       const track = clean(body.track, 60);
       const rawDates = Array.isArray(body.dates) ? body.dates : body.date ? [body.date] : [];

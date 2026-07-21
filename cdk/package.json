@@ -10,10 +10,12 @@
     "test": "node --test 'lambda/**/*.test.mjs'"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1091.0",
+    "@aws-sdk/lib-dynamodb": "^3.1091.0",
+    "@types/node": "^22.0.0",
     "aws-cdk": "^2.170.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.6.0",
-    "@types/node": "^22.0.0"
+    "typescript": "~5.6.0"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.170.0",
