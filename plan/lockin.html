@@ -76,20 +76,19 @@
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
     .hero{padding:18px 14px}
-    /* Scoreboard becomes a vertical stat list: big number + details beside it. */
+    /* Scoreboard: three centered stat blocks stacked vertically (not squished across). */
     #scores{flex-direction:column}
-    .score{flex:none;flex-direction:row;align-items:center;text-align:left;gap:16px;
-      padding:15px 2px;border-left:none;border-top:1px solid var(--edge)}
-    .score:first-child{border-top:none}
-    .score .num{font-size:46px;flex:0 0 auto;min-width:1.7em;text-align:center}
-    .score .meta{display:flex;flex-direction:column;gap:2px}
-    .score .meta .h{order:-1;font-size:17px}
-    .score .meta .u,.score .meta .t{margin-top:0}
+    .score{flex:none;text-align:center;border-left:none;border-top:1px solid var(--edge);padding:16px 2px}
+    .score:first-child{border-top:none;padding-top:2px}
+    .score .num{font-size:52px}
     /* Full-thumb targets, roomier cards, medals stay fully visible (wrapped). */
     .toggle{display:block;width:100%;padding:15px;font-size:15px}
     .hcard{padding:18px}
     .pill{padding:14px 4px}
     .med{width:66px}
+    /* Center the week strip within each card. */
+    .wklabel{text-align:center}
+    .dots{justify-content:center}
   }
 </style>
 </head>
@@ -220,9 +219,9 @@
 
       renderPrayers();
       el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
-      el('soberToggle').textContent = todayRow.sober ? '✓ Clean today' : 'Mark clean today';
+      el('soberToggle').textContent = todayRow.sober ? 'Clean today' : 'Mark clean today';
       el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
-      el('workoutToggle').textContent = todayRow.workout ? '✓ Trained today' : 'Log a session';
+      el('workoutToggle').textContent = todayRow.workout ? 'Trained today' : 'Log a session';
       el('workoutSessions').textContent = 'SESSIONS THIS WEEK · ' + s.workout.thisWeekSessions + '/' + s.workout.target;
 
       dots(el('prayerWeek'), s.prayers.thisWeek);
@@ -248,10 +247,10 @@
     function renderPrayers() {
       el('prayerPills').innerHTML = PRAYERS.map(function (p) {
         var on = todayRow.prayers[p] === true;
-        return '<button type="button" class="pill ' + (on ? 'on' : '') + '" data-p="' + p + '">' + LABELS[p] + (on ? ' ✓' : '') + '</button>';
+        return '<button type="button" class="pill ' + (on ? 'on' : '') + '" data-p="' + p + '">' + LABELS[p] + '</button>';
       }).join('');
       var done = PRAYERS.filter(function (p) { return todayRow.prayers[p]; }).length;
-      el('prayerNote').textContent = done === 5 ? 'All 5 in — day locked ✓'
+      el('prayerNote').textContent = done === 5 ? 'All 5 in — locked in for today'
         : done + ' / 5 today — ' + (5 - done) + ' more before midnight to keep the streak alive.';
       Array.prototype.forEach.call(el('prayerPills').children, function (b) {
         b.addEventListener('click', function () {
@@ -294,13 +293,13 @@
     el('soberToggle').addEventListener('click', function () {
       todayRow.sober = !todayRow.sober;
       el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
-      el('soberToggle').textContent = todayRow.sober ? '✓ Clean today' : 'Mark clean today';
+      el('soberToggle').textContent = todayRow.sober ? 'Clean today' : 'Mark clean today';
       save();
     });
     el('workoutToggle').addEventListener('click', function () {
       todayRow.workout = !todayRow.workout;
       el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
-      el('workoutToggle').textContent = todayRow.workout ? '✓ Trained today' : 'Log a session';
+      el('workoutToggle').textContent = todayRow.workout ? 'Trained today' : 'Log a session';
       save();
     });
 
