@@ -6,7 +6,8 @@
     "build": "tsc",
     "cdk": "cdk",
     "deploy": "cdk deploy",
-    "destroy": "cdk destroy"
+    "destroy": "cdk destroy",
+    "test": "node --test 'lambda/**/*.test.mjs'"
   },
   "devDependencies": {
     "aws-cdk": "^2.170.0",
