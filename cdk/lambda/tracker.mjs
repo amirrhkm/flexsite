@@ -49,3 +49,18 @@ export function runLengths(ordSet) {
   if (run) runs.push(run);
   return runs;
 }
+
+export function medalsFromRuns(runs, tiers) {
+  const m = {}; for (const [name] of tiers) m[name] = 0;
+  for (const len of runs) for (const [name, thr] of tiers) if (len >= thr) m[name]++;
+  return m;
+}
+
+export function comebackCount(runs, bronzeThreshold) {
+  return runs.slice(1).filter((len) => len >= bronzeThreshold).length;
+}
+
+export function forging(current, tiers) {
+  for (const [name, thr] of tiers) if (current < thr) return { tier: name, threshold: thr };
+  return null;
+}
