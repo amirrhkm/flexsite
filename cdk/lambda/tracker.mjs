@@ -20,3 +20,32 @@ export function weekStart(dateStr) {
 export function weekNum(dateStr) {
   return Math.floor(dayNum(weekStart(dateStr)) / 7);
 }
+
+export function streakCurrent(ordSet, endOrd) {
+  let end;
+  if (ordSet.has(endOrd)) end = endOrd;
+  else if (ordSet.has(endOrd - 1)) end = endOrd - 1;
+  else return 0;
+  let n = 0;
+  for (let d = end; ordSet.has(d); d--) n++;
+  return n;
+}
+
+export function bestRun(ordSet) {
+  const a = [...ordSet].sort((x, y) => x - y);
+  let best = 0, run = 0, prev = null;
+  for (const o of a) { run = prev !== null && o === prev + 1 ? run + 1 : 1; if (run > best) best = run; prev = o; }
+  return best;
+}
+
+export function runLengths(ordSet) {
+  const a = [...ordSet].sort((x, y) => x - y);
+  const runs = []; let run = 0, prev = null;
+  for (const o of a) {
+    if (prev !== null && o === prev + 1) run++;
+    else { if (run) runs.push(run); run = 1; }
+    prev = o;
+  }
+  if (run) runs.push(run);
+  return runs;
+}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   todayInMYT, addDays, dayNum, weekStart, weekNum,
   DAY_TIERS, WEEK_TIERS, PRAYERS, WORKOUT_TARGET, TRACKER_POLL,
+  streakCurrent, bestRun, runLengths,
 } from './tracker.mjs';
 
 test('constants', () => {
@@ -32,4 +33,23 @@ test('weekStart returns Monday; weekNum increments weekly', () => {
   assert.equal(weekStart('2026-07-20'), '2026-07-20');
   assert.equal(weekStart('2026-07-26'), '2026-07-20'); // Sunday still same week
   assert.equal(weekNum('2026-07-27') - weekNum('2026-07-21'), 1);
+});
+
+test('streakCurrent counts back from today', () => {
+  const s = new Set([10, 11, 12]); // 3 in a row ending at 12
+  assert.equal(streakCurrent(s, 12), 3);      // today qualifies
+  assert.equal(streakCurrent(s, 13), 3);      // today not logged yet, ends yesterday -> still alive
+  assert.equal(streakCurrent(s, 14), 0);      // full gap -> broken
+  assert.equal(streakCurrent(new Set(), 12), 0);
+});
+
+test('bestRun finds the longest run', () => {
+  assert.equal(bestRun(new Set([1, 2, 3, 10, 11])), 3);
+  assert.equal(bestRun(new Set([5])), 1);
+  assert.equal(bestRun(new Set()), 0);
+});
+
+test('runLengths returns each run in chronological order', () => {
+  assert.deepEqual(runLengths(new Set([1, 2, 3, 10, 11, 20])), [3, 2, 1]);
+  assert.deepEqual(runLengths(new Set()), []);
 });
