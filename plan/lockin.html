@@ -114,6 +114,153 @@
     });
     sync();
   })();
+
+  (function () {
+    var POLL = 'lockin';
+    var PRAYERS = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
+    var LABELS = { subuh: 'Subuh', zohor: 'Zohor', asar: 'Asar', maghrib: 'Maghrib', isya: "Isya'" };
+    var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond'];
+    var TIER_CAP = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', sapphire: 'Sapphire', diamond: 'Diamond', comeback: 'Comeback' };
+    var METAL = { // radial-gradient stops per tier
+      bronze: ['#f0b877', '#c17f3c', '#7d4a1c'], silver: ['#ffffff', '#c2ccd4', '#7f8a93'],
+      gold: ['#fff2b0', '#e3bf47', '#9c7a15'], sapphire: ['#b9d9ff', '#3f7fca', '#1c3f76'],
+      diamond: ['#ffffff', '#c8f6fb', '#5fb6c4'], comeback: ['#ffd9a8', '#d9743f', '#8a3a1a'],
+    };
+    var apiUrl = null;
+    var el = function (id) { return document.getElementById(id); };
+    var today = null;      // 'YYYY-MM-DD' from the server, set on first render
+    var todayRow = {};     // this device's optimistic view of today's ticks
+
+    function medalSvg(tier, locked) {
+      var m = METAL[tier];
+      var id = 'g_' + tier + (locked ? 'L' : '');
+      if (locked) {
+        return '<svg width="52" height="52" viewBox="0 0 102 102"><circle cx="51" cy="51" r="40" fill="none" stroke="var(--edge)" stroke-width="2.5" stroke-dasharray="5 5"/></svg>';
+      }
+      return '<svg width="52" height="52" viewBox="0 0 102 102"><defs><radialGradient id="' + id + '" cx="38%" cy="30%" r="72%">' +
+        '<stop offset="0%" stop-color="' + m[0] + '"/><stop offset="50%" stop-color="' + m[1] + '"/><stop offset="100%" stop-color="' + m[2] + '"/></radialGradient></defs>' +
+        '<circle cx="51" cy="51" r="40" fill="url(#' + id + ')"/>' +
+        '<rect x="34" y="34" width="34" height="34" rx="3" fill="' + m[2] + '" opacity=".5"/>' +
+        '<rect x="34" y="34" width="34" height="34" rx="3" fill="' + m[2] + '" opacity=".5" transform="rotate(45 51 51)"/></svg>';
+    }
+
+    function dots(container, weekBools) {
+      var names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+      container.innerHTML = weekBools.map(function (on, i) {
+        return '<span class="dot ' + (on ? 'on' : 'off') + '">' + names[i] + '</span>';
+      }).join('');
+    }
+
+    function render(state) {
+      var s = state.summary;
+      today = state.today;                 // server owns "today" (MYT); day rolls at 00:00 UTC+8
+      el('today').textContent = new Date(today + 'T00:00:00+08:00').toLocaleDateString('en-GB',
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' });
+      var todayItem = findDay(state.days, today);
+      todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober }
+                           : { prayers: {}, workout: false, sober: false };
+
+      el('sPrayers').textContent = s.prayers.current;
+      el('sSober').textContent = s.sober.current;
+      el('sWorkout').innerHTML = s.workout.current + '<small> wk</small>';
+      el('scores').children[0].querySelector('.t').textContent = tierLabel(s.prayers.forging);
+      el('scores').children[1].querySelector('.t').textContent = tierLabel(s.sober.forging);
+      el('scores').children[2].querySelector('.t').textContent = s.workout.thisWeekSessions + ' of ' + s.workout.target + ' this week';
+
+      el('caseSummary').textContent = s.totals.medals + ' earned · best streak ' + s.totals.bestStreak + ' · ' + s.totals.daysTracked + ' days tracked';
+      renderShelf(s.medals);
+
+      renderPrayers();
+      el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
+      el('soberToggle').textContent = todayRow.sober ? '✓ Clean today' : 'Mark clean today';
+      el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
+      el('workoutToggle').textContent = todayRow.workout ? '✓ Trained today' : 'Log a session';
+      el('workoutSessions').textContent = 'SESSIONS THIS WEEK · ' + s.workout.thisWeekSessions + '/' + s.workout.target;
+
+      dots(el('prayerWeek'), s.prayers.thisWeek);
+      dots(el('soberWeek'), s.sober.thisWeek);
+
+      var wk = el('workoutWeek');
+      wk.innerHTML = Array.from({ length: s.workout.target }, function (_, i) {
+        return '<span class="dot ' + (i < s.workout.thisWeekSessions ? 'on' : 'off') + '">' + (i + 1) + '</span>';
+      }).join('');
+    }
+
+    function renderShelf(medals) {
+      var order = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
+      el('shelf').innerHTML = order.map(function (t) {
+        var n = medals[t] || 0;
+        var locked = n === 0 && t !== 'comeback';
+        var cnt = n > 0 ? '<span class="cnt">×' + n + '</span>' : '';
+        if (n === 0 && t === 'comeback') return '';
+        return '<div class="med ' + (locked ? 'locked' : '') + '">' + cnt + medalSvg(t, locked) + '<span class="cap">' + TIER_CAP[t] + '</span></div>';
+      }).join('');
+    }
+
+    function renderPrayers() {
+      el('prayerPills').innerHTML = PRAYERS.map(function (p) {
+        var on = todayRow.prayers[p] === true;
+        return '<button type="button" class="pill ' + (on ? 'on' : '') + '" data-p="' + p + '">' + LABELS[p] + (on ? ' ✓' : '') + '</button>';
+      }).join('');
+      var done = PRAYERS.filter(function (p) { return todayRow.prayers[p]; }).length;
+      el('prayerNote').textContent = done === 5 ? 'All 5 in — day locked ✓'
+        : done + ' / 5 today — ' + (5 - done) + ' more before midnight to keep the streak alive.';
+      Array.prototype.forEach.call(el('prayerPills').children, function (b) {
+        b.addEventListener('click', function () {
+          todayRow.prayers[b.dataset.p] = !todayRow.prayers[b.dataset.p];
+          renderPrayers();
+          save();
+        });
+      });
+    }
+
+    function tierLabel(f) { return f ? 'forging ' + TIER_CAP[f.tier] : 'maxed out'; }
+    function findDay(days, d) { for (var i = 0; i < days.length; i++) if (days[i].date === d) return days[i]; return null; }
+
+    function banner(msg) { var b = el('banner'); if (!msg) { b.className = ''; return; } b.textContent = msg; b.className = 'show'; }
+
+    function refresh() {
+      if (!apiUrl) return;
+      fetch(apiUrl + '?poll=' + POLL)
+        .then(function (r) { return r.json(); })
+        .then(render)
+        .catch(function () { banner("Can't reach the tracker — reopen the shared link to load your progress."); });
+    }
+
+    function save() {
+      if (!apiUrl) { banner('Ticking only works on the shared link.'); return; }
+      banner('');
+      var snapshot = JSON.stringify(todayRow);
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober }),
+      })
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(render)
+        .catch(function () { banner("Couldn't save that — tap it again to retry."); });
+    }
+
+    el('soberToggle').addEventListener('click', function () {
+      todayRow.sober = !todayRow.sober;
+      el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
+      el('soberToggle').textContent = todayRow.sober ? '✓ Clean today' : 'Mark clean today';
+      save();
+    });
+    el('workoutToggle').addEventListener('click', function () {
+      todayRow.workout = !todayRow.workout;
+      el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
+      el('workoutToggle').textContent = todayRow.workout ? '✓ Trained today' : 'Log a session';
+      save();
+    });
+
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+
+    fetch('./config.json')
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) { apiUrl = cfg.voteApiUrl; refresh(); })
+      .catch(function () { banner('This page is live only on the shared link.'); });
+  })();
   </script>
 </body>
 </html>
