@@ -32,14 +32,16 @@
   #themeToggle:active{transform:scale(.96)}
   .hero{background:radial-gradient(120% 140% at 50% 0%,var(--heroA),var(--heroB) 60%);
     border:1px solid var(--edge);border-radius:16px;padding:22px 16px;margin-bottom:16px}
-  #scores{display:flex}
-  .score{flex:1;min-width:0;text-align:center;padding:0 6px;border-left:1px solid var(--edge)}
-  .score:first-child{border-left:none}
-  .score .num{font-weight:900;font-size:46px;line-height:.82;color:var(--gold);text-shadow:0 0 26px var(--glow)}
-  .score .num small{font-size:20px;color:var(--mut);text-shadow:none}
-  .score .u{font-size:10px;letter-spacing:.14em;color:var(--mut);margin-top:6px}
-  .score .h{font-size:15px;margin-top:4px}
-  .score .t{font-size:10px;color:var(--dim);margin-top:3px}
+  .cardcenter{text-align:center}
+  .ringwrap{position:relative;width:130px;height:130px;margin:4px auto 10px}
+  .ring{position:absolute;inset:0;transform:rotate(-90deg)}
+  .ring .track{fill:none;stroke:var(--edge);stroke-width:8}
+  .ring .prog{fill:none;stroke:var(--gold);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1)}
+  .ringmid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ringmid .num{font-family:'Fraunces',serif;font-weight:900;font-size:42px;line-height:1;color:var(--gold);text-shadow:0 0 24px var(--glow)}
+  .ringmid .numlabel{font-size:8px;letter-spacing:.14em;color:var(--mut);margin-top:3px}
+  .togoal{font-size:12px;color:var(--mut);margin-bottom:12px}
+  .togoal b{color:var(--gold);font-family:'Fraunces',serif}
   .case{margin-top:18px;padding-top:14px;border-top:1px solid var(--edge)}
   .case-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
   .case .l{font-size:10px;letter-spacing:.18em;color:var(--mut)}
@@ -76,11 +78,8 @@
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
     .hero{padding:18px 14px}
-    /* Scoreboard: three centered stat blocks stacked vertically (not squished across). */
-    #scores{flex-direction:column}
-    .score{flex:none;text-align:center;border-left:none;border-top:1px solid var(--edge);padding:16px 2px}
-    .score:first-child{border-top:none;padding-top:2px}
-    .score .num{font-size:52px}
+    /* Rings sit a touch larger and centered on phones. */
+    .ringwrap{width:138px;height:138px}
     /* Full-thumb targets, roomier cards, medals stay fully visible (wrapped). */
     .toggle{display:block;width:100%;padding:15px;font-size:15px}
     .hcard{padding:18px}
@@ -109,11 +108,6 @@
   <div id="banner"></div>
 
   <div class="hero">
-    <div id="scores">
-      <div class="score"><div class="num" id="sPrayers">0</div><div class="meta"><div class="u">DAY STREAK</div><div class="h">Prayers</div><div class="t"></div></div></div>
-      <div class="score"><div class="num" id="sSober">0</div><div class="meta"><div class="u">DAY STREAK</div><div class="h">Sober</div><div class="t"></div></div></div>
-      <div class="score"><div class="num" id="sWorkout">0</div><div class="meta"><div class="u">ON TARGET</div><div class="h">Workout</div><div class="t"></div></div></div>
-    </div>
     <div class="case">
       <div class="case-head">
         <span class="l">THE TROPHY CASE — EVERY ACHIEVEMENT</span>
@@ -124,21 +118,38 @@
   </div>
 
   <div class="grid">
-    <div class="hcard wide">
-      <div class="hname">Prayers · today</div>
+    <div class="hcard wide cardcenter">
+      <div class="hname">Prayers</div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringPrayers" cx="65" cy="65" r="56"/></svg>
+        <div class="ringmid"><div class="num" id="numPrayers">0</div><div class="numlabel">DAY STREAK</div></div>
+      </div>
+      <div class="togoal" id="goalPrayers"></div>
       <div class="pills" id="prayerPills"></div>
       <div class="note" id="prayerNote"></div>
       <div class="wklabel">THIS WEEK</div>
       <div class="dots" id="prayerWeek"></div>
     </div>
-    <div class="hcard">
-      <div class="hname">Sober · today</div>
+
+    <div class="hcard cardcenter">
+      <div class="hname">Sober</div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringSober" cx="65" cy="65" r="56"/></svg>
+        <div class="ringmid"><div class="num" id="numSober">0</div><div class="numlabel">DAY STREAK</div></div>
+      </div>
+      <div class="togoal" id="goalSober"></div>
       <button class="toggle" id="soberToggle" type="button">Mark clean today</button>
       <div class="wklabel">THIS WEEK</div>
       <div class="dots" id="soberWeek"></div>
     </div>
-    <div class="hcard">
-      <div class="hname">Workout · today</div>
+
+    <div class="hcard cardcenter">
+      <div class="hname">Workout</div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringWorkout" cx="65" cy="65" r="56"/></svg>
+        <div class="ringmid"><div class="num" id="numWorkout">0</div><div class="numlabel">WEEKS ON TARGET</div></div>
+      </div>
+      <div class="togoal" id="goalWorkout"></div>
       <button class="toggle" id="workoutToggle" type="button">Log a session</button>
       <div class="wklabel" id="workoutSessions">SESSIONS THIS WEEK</div>
       <div class="dots" id="workoutWeek"></div>
@@ -171,6 +182,30 @@
     var PRAYERS = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
     var LABELS = { subuh: 'Subuh', zohor: 'Zohor', asar: 'Asar', maghrib: 'Maghrib', isya: "Isya'" };
     var TIER_CAP = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', sapphire: 'Sapphire', diamond: 'Diamond', comeback: 'Comeback' };
+    var DAY_TIERS = [['bronze', 7], ['silver', 30], ['gold', 90], ['sapphire', 180], ['diamond', 365]];
+    var WEEK_TIERS = [['bronze', 4], ['silver', 12], ['gold', 26], ['sapphire', 39], ['diamond', 52]];
+    var RC = 2 * Math.PI * 56;
+    var firstPaint = true;
+    var reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
+    function ringProgress(current, tiers) {
+      var prev = 0, i;
+      for (i = 0; i < tiers.length; i++) {
+        if (current < tiers[i][1]) return { p: (current - prev) / (tiers[i][1] - prev), toGo: tiers[i][1] - current, tier: tiers[i][0] };
+        prev = tiers[i][1];
+      }
+      return { p: 1, toGo: 0, tier: null };
+    }
+    function setRing(prog, p, animate) {
+      prog.style.strokeDasharray = RC;
+      prog.style.transition = animate ? '' : 'none';
+      prog.style.strokeDashoffset = RC * (1 - Math.max(0, Math.min(1, p)));
+    }
+    function paintHabit(cap, current, tiers, unit) {
+      el('num' + cap).textContent = current;
+      var t = ringProgress(current, tiers);
+      setRing(el('ring' + cap), t.p, !firstPaint && !reduceMotion);
+      el('goal' + cap).innerHTML = t.tier ? ('<b>' + t.toGo + '</b> ' + unit + ' to ' + TIER_CAP[t.tier]) : 'Maxed — Diamond earned';
+    }
     var METAL = { // radial-gradient stops per tier
       bronze: ['#f0b877', '#c17f3c', '#7d4a1c'], silver: ['#ffffff', '#c2ccd4', '#7f8a93'],
       gold: ['#fff2b0', '#e3bf47', '#9c7a15'], sapphire: ['#b9d9ff', '#3f7fca', '#1c3f76'],
@@ -235,12 +270,9 @@
       todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober }
                            : { prayers: {}, workout: false, sober: false };
 
-      el('sPrayers').textContent = s.prayers.current;
-      el('sSober').textContent = s.sober.current;
-      el('sWorkout').textContent = s.workout.current;
-      el('scores').children[0].querySelector('.t').textContent = tierLabel(s.prayers.forging);
-      el('scores').children[1].querySelector('.t').textContent = tierLabel(s.sober.forging);
-      el('scores').children[2].querySelector('.t').textContent = s.workout.thisWeekSessions + ' of ' + s.workout.target + ' this week';
+      paintHabit('Prayers', s.prayers.current, DAY_TIERS, 'days');
+      paintHabit('Sober', s.sober.current, DAY_TIERS, 'days');
+      paintHabit('Workout', s.workout.current, WEEK_TIERS, 'weeks');
 
       el('caseSummary').textContent = s.totals.medals + ' earned · best streak ' + s.totals.bestStreak + ' · ' + s.totals.daysTracked + ' days tracked';
       renderShelf(s.medals);
@@ -259,6 +291,8 @@
       wk.innerHTML = Array.from({ length: s.workout.target }, function (_, i) {
         return '<span class="dot ' + (i < s.workout.thisWeekSessions ? 'on' : 'off') + '">' + (i + 1) + '</span>';
       }).join('');
+
+      firstPaint = false;
     }
 
     function renderShelf(medals) {
@@ -289,7 +323,6 @@
       });
     }
 
-    function tierLabel(f) { return f ? 'forging ' + TIER_CAP[f.tier] : 'maxed out'; }
     function findDay(days, d) { for (var i = 0; i < days.length; i++) if (days[i].date === d) return days[i]; return null; }
 
     function banner(msg) { var b = el('banner'); if (!msg) { b.className = ''; return; } b.textContent = msg; b.className = 'show'; }
