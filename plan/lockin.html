@@ -182,6 +182,29 @@
     var todayRow = {};     // this device's optimistic view of today's ticks
     var lastState = null;  // last server-confirmed state, for reverting failed optimistic writes
 
+    /*__CELEB_START__*/
+    function celebrationsFor(prev, next) {
+      var PR = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
+      var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
+      var out = { countUp: [], mints: [], dailyComplete: false };
+      if (!prev) return out;
+      ['prayers', 'sober', 'workout'].forEach(function (h) {
+        if (next.summary[h].current > prev.summary[h].current) out.countUp.push(h);
+      });
+      TIERS.forEach(function (t) {
+        if ((next.summary.medals[t] || 0) > (prev.summary.medals[t] || 0)) out.mints.push(t);
+      });
+      var complete = function (st) {
+        var d = null, i;
+        for (i = 0; i < st.days.length; i++) if (st.days[i].date === st.today) d = st.days[i];
+        if (!d) return false;
+        return PR.every(function (p) { return d.prayers && d.prayers[p] === true; }) && d.sober === true;
+      };
+      if (complete(next) && !complete(prev)) out.dailyComplete = true;
+      return out;
+    }
+    /*__CELEB_END__*/
+
     function medalSvg(tier, locked) {
       var m = METAL[tier];
       var id = 'g_' + tier + (locked ? 'L' : '');
