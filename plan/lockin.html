@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root[data-theme="night"]{--bg:#0d141c;--card:#111c27;--edge:#1d2c3a;--ink:#eaf2fb;--mut:#8ba0b6;--dim:#5f7386;--gold:#e8c65a;--done:#1f7a4d;--done-ink:#eafff2;--heroA:#16324a;--heroB:#0d141c;--glow:rgba(232,198,90,.20);color-scheme:dark}
-  :root[data-theme="dawn"]{--bg:#f4ecdd;--card:#fffdf8;--edge:#e4dccb;--ink:#2a2620;--mut:#7a7160;--dim:#a99a7f;--gold:#b8860b;--done:#2e7d54;--done-ink:#ffffff;--heroA:#fffdf8;--heroB:#f4ecdd;--glow:rgba(184,134,11,.14);color-scheme:light}
+  :root[data-theme="night"]{--bg:#0d141c;--card:#111c27;--edge:#1d2c3a;--ink:#eaf2fb;--mut:#8ba0b6;--dim:#5f7386;--gold:#e8c65a;--done:#1f7a4d;--done-ink:#eafff2;--heroA:#16324a;--heroB:#0d141c;--glow:rgba(232,198,90,.20);--pulseglow:rgba(232,198,90,.55);color-scheme:dark}
+  :root[data-theme="dawn"]{--bg:#f4ecdd;--card:#fffdf8;--edge:#e4dccb;--ink:#2a2620;--mut:#7a7160;--dim:#a99a7f;--gold:#b8860b;--done:#2e7d54;--done-ink:#ffffff;--heroA:#fffdf8;--heroB:#f4ecdd;--glow:rgba(184,134,11,.14);--pulseglow:rgba(184,134,11,.42);color-scheme:light}
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0 auto;max-width:820px;background:var(--bg);color:var(--ink);
@@ -77,6 +77,11 @@
   .spark{position:fixed;border-radius:50%;background:var(--gold);pointer-events:none;z-index:50}
   .toast{position:fixed;left:50%;top:38%;z-index:60;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:12px}
   .toast .cap{font-family:'Fraunces',serif;font-weight:900;font-size:26px;color:var(--gold);text-shadow:0 0 30px rgba(232,198,90,.5);text-align:center}
+  /* Always-on tap feedback (plain CSS, runs regardless of reduce-motion / WAAPI). */
+  .hcard.tapped{animation:cardpulse .55s ease}
+  @keyframes cardpulse{0%{box-shadow:0 0 0 0 rgba(0,0,0,0)}35%{box-shadow:0 0 26px 2px var(--pulseglow)}100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}}
+  .ringmid .num.bump{animation:numbump .42s cubic-bezier(.2,.8,.2,1)}
+  @keyframes numbump{40%{transform:scale(1.16)}100%{transform:scale(1)}}
 
   /* Phone: not the desktop layout squished — a genuinely vertical layout. */
   @media (max-width:620px){
@@ -212,6 +217,13 @@
     }
 
     function centerOf(elm) { var r = elm.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+    function tapPulse(controlEl) {
+      var card = controlEl && controlEl.closest ? controlEl.closest('.hcard') : null;
+      if (!card) return;
+      card.classList.remove('tapped'); void card.offsetWidth; card.classList.add('tapped');
+      var num = card.querySelector('.num');
+      if (num) { num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); }
+    }
     function fireBurst(cx, cy, n) {
       if (reduceMotion) return;
       for (var i = 0; i < n; i++) {
@@ -382,7 +394,7 @@
       Array.prototype.forEach.call(el('prayerPills').children, function (b) {
         b.addEventListener('click', function () {
           todayRow.prayers[b.dataset.p] = !todayRow.prayers[b.dataset.p];
-          if (todayRow.prayers[b.dataset.p]) { var c = centerOf(b); fireBurst(c.x, c.y, 12); buzz(15); }
+          if (todayRow.prayers[b.dataset.p]) { tapPulse(b); var c = centerOf(b); fireBurst(c.x, c.y, 12); buzz(15); }
           renderPrayers();
           save();
         });
@@ -425,14 +437,14 @@
       todayRow.sober = !todayRow.sober;
       el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
       el('soberToggle').textContent = todayRow.sober ? 'Clean today' : 'Mark clean today';
-      if (todayRow.sober) { var c = centerOf(el('soberToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
+      if (todayRow.sober) { tapPulse(el('soberToggle')); var c = centerOf(el('soberToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
       save();
     });
     el('workoutToggle').addEventListener('click', function () {
       todayRow.workout = !todayRow.workout;
       el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
       el('workoutToggle').textContent = todayRow.workout ? 'Trained today' : 'Log a session';
-      if (todayRow.workout) { var c = centerOf(el('workoutToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
+      if (todayRow.workout) { tapPulse(el('workoutToggle')); var c = centerOf(el('workoutToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
       save();
     });
 
