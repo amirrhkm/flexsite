@@ -70,9 +70,14 @@ export function computeSummary(days, today) {
   const soberOrd = new Set();
   const weekCounts = new Map(); // weekStart date -> workout-day count
   const activeDates = new Set();
+  let urgesTotal = 0;
+  let urgesToday = 0;
 
   for (const d of days) {
     activeDates.add(d.date);
+    const u = Number(d.urges) > 0 ? Math.floor(Number(d.urges)) : 0;
+    urgesTotal += u;
+    if (d.date === today) urgesToday = u;
     if (PRAYERS.every((p) => d.prayers && d.prayers[p] === true)) prayerOrd.add(dayNum(d.date));
     if (d.sober === true) soberOrd.add(dayNum(d.date));
     if (d.workout === true) {
@@ -131,5 +136,6 @@ export function computeSummary(days, today) {
       bestStreak: Math.max(prayers.best, sober.best),
       daysTracked: activeDates.size,
     },
+    urges: { today: urgesToday, total: urgesTotal },
   };
 }

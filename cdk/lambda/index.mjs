@@ -55,6 +55,11 @@ export function normalizePrayers(input) {
   for (const p of PRAYERS) out[p] = input && input[p] === true;
   return out;
 }
+export function normalizeUrges(v) {
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(n, 1000);
+}
 async function trackerDays(poll) {
   const { Items = [] } = await ddb.send(new QueryCommand({
     TableName: TABLE,
@@ -67,6 +72,7 @@ async function trackerDays(poll) {
     prayers: it.prayers || {},
     workout: it.workout === true,
     sober: it.sober === true,
+    urges: normalizeUrges(it.urges),
   })).sort((a, b) => a.date.localeCompare(b.date));
 }
 async function trackerState(poll) {
@@ -105,11 +111,12 @@ export const handler = async (event) => {
           TableName: TABLE,
           Key: { poll, voter: body.date },
           UpdateExpression:
-            'SET prayers = :pr, workout = :w, sober = :s, updatedAt = :u, createdAt = if_not_exists(createdAt, :u)',
+            'SET prayers = :pr, workout = :w, sober = :s, urges = :ur, updatedAt = :u, createdAt = if_not_exists(createdAt, :u)',
           ExpressionAttributeValues: {
             ':pr': normalizePrayers(body.prayers),
             ':w': body.workout === true,
             ':s': body.sober === true,
+            ':ur': normalizeUrges(body.urges),
             ':u': now,
           },
         }));

@@ -123,3 +123,17 @@ test('workout: a week with >=4 sessions is on-target', () => {
   assert.equal(s.workout.thisWeekSessions, 4);
   assert.equal(s.workout.current, 1); // one on-target week
 });
+
+test('computeSummary sums urges (today + all-time), missing = 0', () => {
+  const days = [
+    { date: '2026-07-19', prayers: {}, workout: false, sober: false, urges: 3 },
+    { date: '2026-07-20', prayers: {}, workout: false, sober: false, urges: 2 },
+    { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 4 },
+  ];
+  const s = computeSummary(days, '2026-07-21');
+  assert.deepEqual(s.urges, { today: 4, total: 9 });
+  assert.deepEqual(
+    computeSummary([{ date: '2026-07-21', prayers: {}, workout: false, sober: false }], '2026-07-21').urges,
+    { today: 0, total: 0 },
+  );
+});
