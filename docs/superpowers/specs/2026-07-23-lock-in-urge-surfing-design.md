@@ -17,9 +17,16 @@ tracker + reward loop ([2026-07-21](2026-07-21-lock-in-habit-tracker-design.md),
 - **Independent of the streak.** Having urges is normal; *riding* them is staying clean.
   The urge count must never touch the sober day-tick or look like a slip.
 
+## Tone (binding)
+
+**No emoji anywhere. Copy is spare** — short phase words (`Building` / `Cresting` /
+`Passing`), the breath cue (`Breathe in` / `Breathe out`), and at most one brief line
+("It rises and passes. Ride it."). No paragraphs, no pep-talk. The button label is plain
+text: **"Ride out an urge"**.
+
 ## The chosen shape (validated by an approved prototype)
 
-On the **Sober card**: a button **"🌊 Feeling an urge? Ride it out"** plus a ridden
+On the **Sober card**: a button **"Ride out an urge"** plus a ridden
 count (today · all-time) and the current **wave badge** with progress to the next.
 
 Tapping it:
