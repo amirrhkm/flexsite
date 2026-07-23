@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root[data-theme="night"]{--bg:#0d141c;--card:#111c27;--edge:#1d2c3a;--ink:#eaf2fb;--mut:#8ba0b6;--dim:#5f7386;--gold:#e8c65a;--done:#1f7a4d;--done-ink:#eafff2;--heroA:#16324a;--heroB:#0d141c;--glow:rgba(232,198,90,.20);--pulseglow:rgba(232,198,90,.55);color-scheme:dark}
-  :root[data-theme="dawn"]{--bg:#f4ecdd;--card:#fffdf8;--edge:#e4dccb;--ink:#2a2620;--mut:#7a7160;--dim:#a99a7f;--gold:#b8860b;--done:#2e7d54;--done-ink:#ffffff;--heroA:#fffdf8;--heroB:#f4ecdd;--glow:rgba(184,134,11,.14);--pulseglow:rgba(184,134,11,.42);color-scheme:light}
+  :root[data-theme="night"]{--bg:#0d141c;--card:#111c27;--edge:#1d2c3a;--ink:#eaf2fb;--mut:#8ba0b6;--dim:#5f7386;--gold:#e8c65a;--done:#1f7a4d;--done-ink:#eafff2;--heroA:#16324a;--heroB:#0d141c;--glow:rgba(232,198,90,.20);--pulseglow:rgba(232,198,90,.55);--sea:#3f7fca;--seabg:rgba(47,128,184,.14);--sea-ink:#cfe6f7;--sea-ink2:#7fb8e6;color-scheme:dark}
+  :root[data-theme="dawn"]{--bg:#f4ecdd;--card:#fffdf8;--edge:#e4dccb;--ink:#2a2620;--mut:#7a7160;--dim:#a99a7f;--gold:#b8860b;--done:#2e7d54;--done-ink:#ffffff;--heroA:#fffdf8;--heroB:#f4ecdd;--glow:rgba(184,134,11,.14);--pulseglow:rgba(184,134,11,.42);--sea:#2f6fb0;--seabg:rgba(47,111,176,.10);--sea-ink:#235d92;--sea-ink2:#2f6fb0;color-scheme:light}
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0 auto;max-width:820px;background:var(--bg);color:var(--ink);
@@ -83,6 +83,28 @@
   .ringmid .num.bump{animation:numbump .42s cubic-bezier(.2,.8,.2,1)}
   @keyframes numbump{40%{transform:scale(1.16)}100%{transform:scale(1)}}
 
+  .urge{margin-top:14px;padding-top:14px;border-top:1px solid var(--edge)}
+  .urgebtn{width:100%;border:1px solid var(--sea);background:var(--seabg);color:var(--sea-ink);
+    border-radius:12px;padding:13px;font:600 14px/1 'Inter';cursor:pointer;transition:transform .08s,background .15s}
+  .urgebtn:active{transform:scale(.97)}
+  .urgestat{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:11px;color:var(--mut)}
+  .urgecount b{font-family:'Fraunces',serif;color:var(--sea-ink2)}
+  .wavebadge svg{display:block}
+  #ov{position:fixed;inset:0;background:#07101a;display:none;flex-direction:column;align-items:center;z-index:70;overflow:hidden}
+  #ov.on{display:flex}
+  #ov canvas{position:absolute;inset:0;width:100%;height:100%}
+  .ovtop{position:relative;z-index:2;padding:calc(40px + env(safe-area-inset-top)) 22px 0;text-align:center;max-width:420px}
+  .ovtop .phase{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin-bottom:8px;color:#eaf2fb}
+  .ovtop .guide{font-size:14px;color:#bcd4ea;line-height:1.5}
+  .breath{position:relative;z-index:2;margin:auto;width:170px;height:170px;display:flex;align-items:center;justify-content:center}
+  .breath .bring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(120,190,240,.5);
+    background:radial-gradient(circle,rgba(87,166,216,.25),transparent 70%);transition:transform .2s linear}
+  .breath .word{font-size:15px;letter-spacing:.1em;color:#dbeeff;z-index:3}
+  .ovbtns{position:relative;z-index:2;padding:0 22px calc(38px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px}
+  .ovbtns button{border:none;border-radius:12px;padding:15px;font:600 15px/1 'Inter';cursor:pointer}
+  #okBtn{background:rgba(255,255,255,.10);color:#dbeeff;border:1px solid rgba(120,190,240,.3)}
+  #doneBtn{background:var(--gold);color:#0d141c;display:none}
+
   /* Phone: not the desktop layout squished — a genuinely vertical layout. */
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
@@ -150,6 +172,10 @@
       <button class="toggle" id="soberToggle" type="button">Mark clean today</button>
       <div class="wklabel">THIS WEEK</div>
       <div class="dots" id="soberWeek"></div>
+      <div class="urge">
+        <button class="urgebtn" id="urgeBtn" type="button">Ride out an urge</button>
+        <div class="urgestat"><span class="wavebadge" id="waveBadge"></span><span class="urgecount"><b id="urToday">0</b> today · <b id="urAll">0</b> all-time</span></div>
+      </div>
     </div>
 
     <div class="hcard cardcenter">
@@ -280,6 +306,7 @@
         countUp(el('num' + cap), prev.summary[h].current, next.summary[h].current);
       });
       c.mints.forEach(function (tier, i) { setTimeout(function () { mint(tier); }, i * 320); });
+      c.waveBadges.forEach(function (name, i) { setTimeout(function () { mintWave(name); }, (c.mints.length + i) * 320); });
       if (c.dailyComplete) setTimeout(celebrateDaily, c.mints.length ? 400 : 0);
     }
 
@@ -288,6 +315,84 @@
       gold: ['#fff2b0', '#e3bf47', '#9c7a15'], sapphire: ['#b9d9ff', '#3f7fca', '#1c3f76'],
       diamond: ['#ffffff', '#c8f6fb', '#5fb6c4'], comeback: ['#ffd9a8', '#d9743f', '#8a3a1a'],
     };
+    var WAVE_TIERS = [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
+    function waveBadgeSvg(size) {
+      return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 102 102">' +
+        '<defs><radialGradient id="wv" cx="40%" cy="30%" r="72%"><stop offset="0%" stop-color="#bfe6ff"/>' +
+        '<stop offset="55%" stop-color="#3f7fca"/><stop offset="100%" stop-color="#1c3f76"/></radialGradient></defs>' +
+        '<circle cx="51" cy="51" r="42" fill="url(#wv)"/>' +
+        '<path d="M20 58 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="4" stroke-linecap="round" opacity=".9"/>' +
+        '<path d="M20 48 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>';
+    }
+    function currentWaveBadge(total) {
+      var earned = null, next = null, i;
+      for (i = 0; i < WAVE_TIERS.length; i++) {
+        if (total >= WAVE_TIERS[i][1]) earned = WAVE_TIERS[i][0];
+        else { next = WAVE_TIERS[i]; break; }
+      }
+      return { earned: earned, next: next, toGo: next ? next[1] - total : 0 };
+    }
+    function mintWave(name) {
+      buzz([20, 40, 40]);
+      fireBurst(window.innerWidth / 2, window.innerHeight * 0.4, 22);
+      if (reduceMotion) return;
+      var t = document.createElement('div'); t.className = 'toast';
+      t.innerHTML = waveBadgeSvg(120) + '<div class="cap">' + name + '</div>';
+      document.body.appendChild(t);
+      var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.4)' },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .45 },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .8 },
+        { opacity: 0, transform: 'translate(-50%,-50%) scale(.9) translateY(-26px)' }],
+        { duration: 1700, easing: 'ease' });
+      a.onfinish = function () { t.remove(); };
+    }
+    function paintUrges(s) {
+      var total = (s.urges && s.urges.total) || 0, today = (s.urges && s.urges.today) || 0;
+      el('urToday').textContent = today;
+      el('urAll').textContent = total;
+      var b = currentWaveBadge(total);
+      el('waveBadge').innerHTML = b.earned ? waveBadgeSvg(30) : '';
+    }
+    var OV_DUR = 60000, BR_IN = 4000, BR_OUT = 6000;
+    var ovCv, ovCtx, ovW, ovH, ovRaf = null, ovT0 = 0;
+    function ovSize() { ovW = ovCv.width = innerWidth * devicePixelRatio; ovH = ovCv.height = innerHeight * devicePixelRatio; }
+    function ovFrame(now) {
+      var p = Math.min(1, (now - ovT0) / OV_DUR), env = Math.sin(p * Math.PI);
+      var amp = (12 + env * 78) * devicePixelRatio, base = ovH * (0.80 - env * 0.28);
+      ovCtx.clearRect(0, 0, ovW, ovH);
+      var grad = ovCtx.createLinearGradient(0, base - amp, 0, ovH);
+      grad.addColorStop(0, 'rgba(87,166,216,.55)'); grad.addColorStop(1, 'rgba(20,60,110,.85)');
+      for (var layer = 0; layer < 2; layer++) {
+        ovCtx.beginPath(); ovCtx.moveTo(0, ovH);
+        var ph = now * (0.0016 + layer * 0.0007) + layer * 2, la = amp * (layer ? 0.6 : 1);
+        for (var x = 0; x <= ovW; x += 8 * devicePixelRatio) ovCtx.lineTo(x, base - Math.sin(x / (120 * devicePixelRatio) + ph) * la);
+        ovCtx.lineTo(ovW, ovH); ovCtx.closePath();
+        ovCtx.fillStyle = layer ? 'rgba(47,128,184,.35)' : grad; ovCtx.fill();
+      }
+      var cyc = (now - ovT0) % (BR_IN + BR_OUT), inhale = cyc < BR_IN;
+      var k = inhale ? cyc / BR_IN : 1 - (cyc - BR_IN) / BR_OUT;
+      el('ovRing').style.transform = 'scale(' + (0.6 + 0.4 * k) + ')';
+      el('ovWord').textContent = inhale ? 'Breathe in' : 'Breathe out';
+      el('ovPhase').textContent = p < 0.4 ? 'Building' : p < 0.72 ? 'Cresting' : 'Passing';
+      if (p >= 1) { ovFinish(); return; }
+      ovRaf = requestAnimationFrame(ovFrame);
+    }
+    function ovFinish() {
+      if (ovRaf) cancelAnimationFrame(ovRaf); ovRaf = null;
+      el('ovPhase').textContent = 'It passed'; el('ovGuide').textContent = 'You rode it out.';
+      el('ovWord').textContent = ''; el('ovRing').style.transform = 'scale(.6)';
+      el('okBtn').style.display = 'none'; el('doneBtn').style.display = 'block';
+      if (ovCtx) ovCtx.clearRect(0, 0, ovW, ovH);
+    }
+    function ovOpen() {
+      if (!ovCv) { ovCv = el('ovCanvas'); ovCtx = ovCv.getContext('2d'); }
+      el('ov').classList.add('on'); el('ov').setAttribute('aria-hidden', 'false');
+      el('ovPhase').textContent = 'Building'; el('ovGuide').textContent = 'It rises and passes. Ride it.';
+      el('okBtn').style.display = 'block'; el('doneBtn').style.display = 'none';
+      ovSize(); ovT0 = performance.now(); ovRaf = requestAnimationFrame(ovFrame);
+    }
+    function ovClose() { if (ovRaf) cancelAnimationFrame(ovRaf); ovRaf = null; el('ov').classList.remove('on'); el('ov').setAttribute('aria-hidden', 'true'); }
+    addEventListener('resize', function () { if (el('ov').classList.contains('on')) ovSize(); });
     var apiUrl = null;
     var el = function (id) { return document.getElementById(id); };
     var today = null;      // 'YYYY-MM-DD' from the server, set on first render
@@ -348,12 +453,13 @@
       el('today').textContent = new Date(today + 'T00:00:00+08:00').toLocaleDateString('en-GB',
         { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' });
       var todayItem = findDay(state.days, today);
-      todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober }
-                           : { prayers: {}, workout: false, sober: false };
+      todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober, urges: todayItem.urges || 0 }
+                           : { prayers: {}, workout: false, sober: false, urges: 0 };
 
       paintHabit('Prayers', s.prayers.current, DAY_TIERS, 'days');
       paintHabit('Sober', s.sober.current, DAY_TIERS, 'days');
       paintHabit('Workout', s.workout.current, WEEK_TIERS, 'weeks');
+      paintUrges(s);
 
       el('caseSummary').textContent = s.totals.medals + ' earned · best streak ' + s.totals.bestStreak + ' · ' + s.totals.daysTracked + ' days tracked';
       renderShelf(s.medals);
@@ -423,7 +529,7 @@
       fetch(apiUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober }),
+        body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober, urges: todayRow.urges }),
       })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function (newState) {
@@ -452,6 +558,17 @@
       save();
     });
 
+    el('urgeBtn').addEventListener('click', function () {
+      todayRow.urges = (todayRow.urges || 0) + 1;      // the choice to surf is the win — bank on tap
+      el('urToday').textContent = +el('urToday').textContent + 1;
+      el('urAll').textContent = +el('urAll').textContent + 1;
+      buzz(15);
+      save();                                          // POST includes urges; response re-renders + wave-badge mint
+      ovOpen();
+    });
+    el('okBtn').addEventListener('click', ovClose);
+    el('doneBtn').addEventListener('click', ovClose);
+
     document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
 
     fetch('./config.json')
@@ -460,5 +577,11 @@
       .catch(function () { banner('This page is live only on the shared link.'); });
   })();
   </script>
+  <div id="ov" aria-hidden="true">
+    <canvas id="ovCanvas"></canvas>
+    <div class="ovtop"><div class="phase" id="ovPhase">Building</div><div class="guide" id="ovGuide">It rises and passes. Ride it.</div></div>
+    <div class="breath"><div class="bring" id="ovRing"></div><div class="word" id="ovWord">Breathe in</div></div>
+    <div class="ovbtns"><button id="okBtn" type="button">I'm okay now</button><button id="doneBtn" type="button">Done</button></div>
+  </div>
 </body>
 </html>
