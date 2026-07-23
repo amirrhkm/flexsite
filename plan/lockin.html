@@ -191,6 +191,13 @@
     </div>
   </div>
 
+  <div id="ov" aria-hidden="true">
+    <canvas id="ovCanvas"></canvas>
+    <div class="ovtop"><div class="phase" id="ovPhase">Building</div><div class="guide" id="ovGuide">It rises and passes. Ride it.</div></div>
+    <div class="breath"><div class="bring" id="ovRing"></div><div class="word" id="ovWord">Breathe in</div></div>
+    <div class="ovbtns"><button id="okBtn" type="button">I'm okay now</button><button id="doneBtn" type="button">Done</button></div>
+  </div>
+
   <script>
   // Theme toggle (persisted). Rest of behaviour added in Task 7.
   (function () {
@@ -577,11 +584,5 @@
       .catch(function () { banner('This page is live only on the shared link.'); });
   })();
   </script>
-  <div id="ov" aria-hidden="true">
-    <canvas id="ovCanvas"></canvas>
-    <div class="ovtop"><div class="phase" id="ovPhase">Building</div><div class="guide" id="ovGuide">It rises and passes. Ride it.</div></div>
-    <div class="breath"><div class="bring" id="ovRing"></div><div class="word" id="ovWord">Breathe in</div></div>
-    <div class="ovbtns"><button id="okBtn" type="button">I'm okay now</button><button id="doneBtn" type="button">Done</button></div>
-  </div>
 </body>
 </html>
