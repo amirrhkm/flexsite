@@ -298,7 +298,7 @@
     function celebrationsFor(prev, next) {
       var PR = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
       var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
-      var out = { countUp: [], mints: [], dailyComplete: false };
+      var out = { countUp: [], mints: [], dailyComplete: false, waveBadges: [] };
       if (!prev) return out;
       ['prayers', 'sober', 'workout'].forEach(function (h) {
         if (next.summary[h].current > prev.summary[h].current) out.countUp.push(h);
@@ -313,6 +313,10 @@
         return PR.every(function (p) { return d.prayers && d.prayers[p] === true; }) && d.sober === true;
       };
       if (complete(next) && !complete(prev)) out.dailyComplete = true;
+      var WAVE = [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
+      var pt = (prev.summary.urges && prev.summary.urges.total) || 0;
+      var nt = (next.summary.urges && next.summary.urges.total) || 0;
+      WAVE.forEach(function (w) { if (pt < w[1] && nt >= w[1]) out.waveBadges.push(w[0]); });
       return out;
     }
     /*__CELEB_END__*/
