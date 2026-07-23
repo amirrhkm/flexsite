@@ -74,6 +74,12 @@
   :root[data-theme="dawn"] #banner{background:#fbf0d8;color:#7a5a1e;border-color:#e2c98f}
   #banner.show{display:block}
 
+  .log.pop{animation:rpop .28s ease}
+  @keyframes rpop{40%{transform:scale(.96)}100%{transform:scale(1)}}
+  .spark{position:fixed;border-radius:50%;background:var(--gold);pointer-events:none;z-index:50}
+  .toast{position:fixed;left:50%;top:38%;z-index:60;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .toast .cap{font-family:'Fraunces',serif;font-weight:900;font-size:26px;color:var(--gold);text-shadow:0 0 30px rgba(232,198,90,.5);text-align:center}
+
   /* Phone: not the desktop layout squished — a genuinely vertical layout. */
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
@@ -206,6 +212,67 @@
       setRing(el('ring' + cap), t.p, !firstPaint && !reduceMotion);
       el('goal' + cap).innerHTML = t.tier ? ('<b>' + t.toGo + '</b> ' + unit + ' to ' + TIER_CAP[t.tier]) : 'Maxed — Diamond earned';
     }
+
+    function centerOf(elm) { var r = elm.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+    function fireBurst(cx, cy, n) {
+      if (reduceMotion) return;
+      for (var i = 0; i < n; i++) {
+        var s = document.createElement('div'); s.className = 'spark';
+        var sz = 6 + Math.random() * 7; s.style.width = sz + 'px'; s.style.height = sz + 'px';
+        s.style.left = cx + 'px'; s.style.top = cy + 'px'; document.body.appendChild(s);
+        var ang = Math.random() * Math.PI * 2, dist = 45 + Math.random() * 80;
+        var a = s.animate([{ transform: 'translate(-50%,-50%)', opacity: 1 },
+          { transform: 'translate(calc(-50% + ' + Math.cos(ang) * dist + 'px),calc(-50% + ' + Math.sin(ang) * dist + 'px)) scale(.2)', opacity: 0 }],
+          { duration: 650 + Math.random() * 350, easing: 'cubic-bezier(.15,.7,.3,1)' });
+        a.onfinish = function () { this.effect.target.remove(); };
+      }
+    }
+    function buzz(pattern) { if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} } }
+    function countUp(elm, from, to) {
+      if (reduceMotion || from === to) { elm.textContent = to; return; }
+      var start = null, dur = 520;
+      (function step(ts) { if (!start) start = ts; var k = Math.min(1, (ts - start) / dur), e = 1 - Math.pow(1 - k, 3);
+        elm.textContent = Math.round(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); })(performance.now());
+    }
+    function mint(tier) {
+      buzz([30, 40, 60]);
+      fireBurst(window.innerWidth / 2, window.innerHeight * 0.38, 28);
+      if (reduceMotion) return;
+      var t = document.createElement('div'); t.className = 'toast';
+      t.innerHTML = medalSvg(tier, false).replace('width="52" height="52"', 'width="120" height="120"') +
+        '<div class="cap">' + TIER_CAP[tier] + ' unlocked</div>';
+      document.body.appendChild(t);
+      var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.4)' },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .45 },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .8 },
+        { opacity: 0, transform: 'translate(-50%,-50%) scale(.9) translateY(-26px)' }],
+        { duration: 1700, easing: 'ease' });
+      a.onfinish = function () { t.remove(); };
+    }
+    function celebrateDaily() {
+      buzz(20);
+      fireBurst(window.innerWidth / 2, window.innerHeight * 0.4, 22);
+      if (reduceMotion) return;
+      var t = document.createElement('div'); t.className = 'toast';
+      t.innerHTML = '<div class="cap">Locked in for today</div>';
+      document.body.appendChild(t);
+      var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.7)' },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .3 },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .75 },
+        { opacity: 0, transform: 'translate(-50%,-50%) scale(1) translateY(-22px)' }],
+        { duration: 1500, easing: 'ease' });
+      a.onfinish = function () { t.remove(); };
+    }
+    function runCelebrations(prev, next) {
+      var c = celebrationsFor(prev, next);
+      c.countUp.forEach(function (h) {
+        var cap = h.charAt(0).toUpperCase() + h.slice(1);
+        countUp(el('num' + cap), prev.summary[h].current, next.summary[h].current);
+      });
+      c.mints.forEach(function (tier, i) { setTimeout(function () { mint(tier); }, i * 320); });
+      if (c.dailyComplete) setTimeout(celebrateDaily, c.mints.length ? 400 : 0);
+    }
+
     var METAL = { // radial-gradient stops per tier
       bronze: ['#f0b877', '#c17f3c', '#7d4a1c'], silver: ['#ffffff', '#c2ccd4', '#7f8a93'],
       gold: ['#fff2b0', '#e3bf47', '#9c7a15'], sapphire: ['#b9d9ff', '#3f7fca', '#1c3f76'],
@@ -317,6 +384,7 @@
       Array.prototype.forEach.call(el('prayerPills').children, function (b) {
         b.addEventListener('click', function () {
           todayRow.prayers[b.dataset.p] = !todayRow.prayers[b.dataset.p];
+          if (todayRow.prayers[b.dataset.p]) { var c = centerOf(b); fireBurst(c.x, c.y, 12); buzz(15); }
           renderPrayers();
           save();
         });
@@ -344,7 +412,11 @@
         body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober }),
       })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-        .then(render)
+        .then(function (newState) {
+          var prev = lastState;      // capture before render() overwrites lastState
+          render(newState);
+          runCelebrations(prev, newState);
+        })
         .catch(function () {
           if (lastState) render(lastState);
           banner("Couldn't save — your change was undone. Check your connection and try again.");
@@ -355,12 +427,14 @@
       todayRow.sober = !todayRow.sober;
       el('soberToggle').className = 'toggle' + (todayRow.sober ? ' on' : '');
       el('soberToggle').textContent = todayRow.sober ? 'Clean today' : 'Mark clean today';
+      if (todayRow.sober) { var c = centerOf(el('soberToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
       save();
     });
     el('workoutToggle').addEventListener('click', function () {
       todayRow.workout = !todayRow.workout;
       el('workoutToggle').className = 'toggle' + (todayRow.workout ? ' on' : '');
       el('workoutToggle').textContent = todayRow.workout ? 'Trained today' : 'Log a session';
+      if (todayRow.workout) { var c = centerOf(el('workoutToggle')); fireBurst(c.x, c.y, 12); buzz(15); }
       save();
     });
 
