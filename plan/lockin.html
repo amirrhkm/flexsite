@@ -125,6 +125,30 @@
   .tabs button.on::before{content:"";position:absolute;top:0;left:24%;right:24%;height:2px;background:var(--gold);border-radius:2px}
   .tabs .ic{width:20px;height:20px}
 
+  .taphint{font-size:9px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin:-4px 0 8px}
+  .ringwrap.taphist{cursor:pointer}
+  #cal{position:fixed;inset:0;background:rgba(7,12,20,.92);backdrop-filter:blur(4px);display:none;
+    align-items:flex-start;justify-content:center;padding:24px 14px;z-index:60;overflow:auto}
+  #cal.on{display:flex}
+  .calsheet{background:var(--card);border:1px solid var(--edge);border-radius:18px;padding:18px 16px 22px;width:360px;max-width:100%;text-align:center}
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .calhead .t{font-family:'Fraunces',serif;font-weight:700;font-size:17px}
+  .calx{background:none;border:1px solid var(--edge);color:var(--mut);border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:15px}
+  .calsum{font-size:11px;color:var(--mut);margin-bottom:14px}
+  .calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .calnav button{background:none;border:1px solid var(--edge);color:var(--ink);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:16px}
+  .calnav button:disabled{opacity:.3;cursor:default}
+  .calmo{font-family:'Fraunces',serif;font-size:15px}
+  .calwk{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px}
+  .calwk span{font-size:9px;color:var(--dim)}
+  .caldays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cd{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--dim)}
+  .cd.pad{visibility:hidden}
+  .cd.miss{background:#0e1620;color:#4a5666}
+  .cd.done{background:var(--gold);color:#0d141c;font-weight:700;box-shadow:0 0 10px var(--glow)}
+  .cd.future{color:#2c3644}
+  .cd.today{outline:2px solid var(--gold);outline-offset:1px}
+
   /* Phone: not the desktop layout squished — a genuinely vertical layout. */
   @media (max-width:620px){
     .grid{grid-template-columns:1fr}
@@ -155,10 +179,11 @@
   <div class="grid">
     <div class="hcard wide cardcenter">
       <div class="hname">Prayers</div>
-      <div class="ringwrap">
+      <div class="ringwrap taphist" data-habit="prayers" role="button" tabindex="0">
         <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringPrayers" cx="65" cy="65" r="56"/></svg>
         <div class="ringmid"><div class="num" id="numPrayers">0</div><div class="numlabel">DAY STREAK</div></div>
       </div>
+      <div class="taphint">tap for history</div>
       <div class="togoal" id="goalPrayers"></div>
       <div class="pills" id="prayerPills"></div>
       <div class="note" id="prayerNote"></div>
@@ -168,10 +193,11 @@
 
     <div class="hcard cardcenter">
       <div class="hname">Sober</div>
-      <div class="ringwrap">
+      <div class="ringwrap taphist" data-habit="sober" role="button" tabindex="0">
         <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringSober" cx="65" cy="65" r="56"/></svg>
         <div class="ringmid"><div class="num" id="numSober">0</div><div class="numlabel">DAY STREAK</div></div>
       </div>
+      <div class="taphint">tap for history</div>
       <div class="togoal" id="goalSober"></div>
       <button class="toggle" id="soberToggle" type="button">Mark clean today</button>
       <div class="wklabel">THIS WEEK</div>
@@ -184,10 +210,11 @@
 
     <div class="hcard cardcenter">
       <div class="hname">Workout</div>
-      <div class="ringwrap">
+      <div class="ringwrap taphist" data-habit="workout" role="button" tabindex="0">
         <svg class="ring" viewBox="0 0 130 130"><circle class="track" cx="65" cy="65" r="56"/><circle class="prog" id="ringWorkout" cx="65" cy="65" r="56"/></svg>
         <div class="ringmid"><div class="num" id="numWorkout">0</div><div class="numlabel">WEEK STREAK</div></div>
       </div>
+      <div class="taphint">tap for history</div>
       <div class="togoal" id="goalWorkout"></div>
       <button class="toggle" id="workoutToggle" type="button">Log a session</button>
       <div class="wklabel" id="workoutSessions">SESSIONS THIS WEEK</div>
@@ -202,6 +229,16 @@
     <div id="awardsTotals"></div>
     <div class="explain" id="explain">Tap a medal to see what it earns.</div>
     <div class="agrid" id="awardsGrid"></div>
+  </div>
+
+  <div id="cal" aria-hidden="true">
+    <div class="calsheet">
+      <div class="calhead"><span class="t" id="calTitle">Prayers</span><button class="calx" id="calClose" type="button">✕</button></div>
+      <div class="calsum" id="calSum"></div>
+      <div class="calnav"><button id="calPrev" type="button">‹</button><span class="calmo" id="calMonth"></span><button id="calNext" type="button">›</button></div>
+      <div class="calwk"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+      <div class="caldays" id="calDays"></div>
+    </div>
   </div>
 
   <nav class="tabs">
@@ -534,6 +571,48 @@
       el('awardsGrid').innerHTML = cells;
     }
 
+    function calCounted(rec, h) {
+      if (!rec) return false;
+      if (h === 'prayers') return PRAYERS.every(function (p) { return rec.prayers && rec.prayers[p] === true; });
+      if (h === 'sober') return rec.sober === true;
+      return rec.workout === true;
+    }
+    var calH = 'prayers', calY = 0, calM = 0;
+    var CAL_NM = { prayers: 'Prayers', sober: 'Sober', workout: 'Workout' };
+    function calDraw() {
+      var days = (lastState && lastState.days) || [];
+      var byDate = {}, j; for (j = 0; j < days.length; j++) byDate[days[j].date] = days[j];
+      var earliest = days.length ? days[0].date : (today || '2026-01-01');
+      var todayStr = today || earliest;
+      el('calTitle').textContent = CAL_NM[calH];
+      var first = new Date(Date.UTC(calY, calM, 1));
+      el('calMonth').textContent = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      var dim = new Date(Date.UTC(calY, calM + 1, 0)).getUTCDate();
+      var lead = (first.getUTCDay() + 6) % 7, cells = '', i, done = 0, tot = 0;
+      for (i = 0; i < lead; i++) cells += '<div class="cd pad"></div>';
+      for (i = 1; i <= dim; i++) {
+        var iso = calY + '-' + String(calM + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+        var cls = 'cd', future = iso > todayStr;
+        if (future) cls += ' future';
+        else { if (calCounted(byDate[iso], calH)) { cls += ' done'; done++; } else cls += ' miss'; tot++; }
+        if (iso === todayStr) cls += ' today';
+        cells += '<div class="' + cls + '">' + i + '</div>';
+      }
+      el('calDays').innerHTML = cells;
+      el('calSum').textContent = done + ' of ' + tot + ' days this month';
+      var dispKey = calY + '-' + String(calM + 1).padStart(2, '0');
+      el('calNext').disabled = dispKey >= todayStr.slice(0, 7);
+      el('calPrev').disabled = dispKey <= earliest.slice(0, 7);
+    }
+    function openCalendar(h) {
+      if (!lastState) return;
+      calH = h;
+      var t = today || '2026-01-01';
+      calY = +t.slice(0, 4); calM = +t.slice(5, 7) - 1;
+      calDraw();
+      el('cal').classList.add('on');
+    }
+
     function renderPrayers() {
       el('prayerPills').innerHTML = PRAYERS.map(function (p) {
         var on = todayRow.prayers[p] === true;
@@ -630,6 +709,14 @@
     }
     el('tabTrack').addEventListener('click', function () { showTab('track'); });
     el('tabAwards').addEventListener('click', function () { showTab('awards'); });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.ringwrap.taphist'), function (rw) {
+      rw.addEventListener('click', function () { openCalendar(rw.dataset.habit); });
+    });
+    el('calClose').addEventListener('click', function () { el('cal').classList.remove('on'); });
+    el('cal').addEventListener('click', function (e) { if (e.target === el('cal')) el('cal').classList.remove('on'); });
+    el('calPrev').addEventListener('click', function () { if (el('calPrev').disabled) return; calM--; if (calM < 0) { calM = 11; calY--; } calDraw(); });
+    el('calNext').addEventListener('click', function () { if (el('calNext').disabled) return; calM++; if (calM > 11) { calM = 0; calY++; } calDraw(); });
 
     document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
 
