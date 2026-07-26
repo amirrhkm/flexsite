@@ -362,13 +362,14 @@
       a.onfinish = function () { t.remove(); };
     }
     function runCelebrations(prev, next) {
-      var c = celebrationsFor(prev, next, WAVE_TIERS);
+      var c = celebrationsFor(prev, next, WAVE_TIERS, EFFORT_TIERS);
       c.countUp.forEach(function (h) {
         var cap = h.charAt(0).toUpperCase() + h.slice(1);
         countUp(el('num' + cap), prev.summary[h].current, next.summary[h].current);
       });
       c.mints.forEach(function (tier, i) { setTimeout(function () { mint(tier); }, i * 320); });
       c.waveBadges.forEach(function (name, i) { setTimeout(function () { mintWave(name); }, (c.mints.length + i) * 320); });
+      c.effortBadges.forEach(function (name, i) { setTimeout(function () { mintEffort(name); }, (c.mints.length + c.waveBadges.length + i) * 320); });
       if (c.dailyComplete) setTimeout(celebrateDaily, c.mints.length ? 400 : 0);
     }
 
@@ -379,6 +380,7 @@
     };
     var svgSeq = 0;
     var WAVE_TIERS = [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
+    var EFFORT_TIERS = [['Ember', 3], ['Flame', 10], ['Blaze', 25], ['Furnace', 60], ['Inferno', 150]];
     function waveBadgeSvg(size) {
       var id = 'wv_' + (svgSeq++);
       return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 102 102">' +
@@ -387,6 +389,15 @@
         '<circle cx="51" cy="51" r="42" fill="url(#' + id + ')"/>' +
         '<path d="M20 58 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="4" stroke-linecap="round" opacity=".9"/>' +
         '<path d="M20 48 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>';
+    }
+    function flameSvg(size) {
+      var id = 'fl_' + (svgSeq++);
+      return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 102 102">' +
+        '<defs><radialGradient id="' + id + '" cx="42%" cy="34%" r="72%"><stop offset="0%" stop-color="#ffd98a"/>' +
+        '<stop offset="48%" stop-color="#e8721f"/><stop offset="100%" stop-color="#7a2410"/></radialGradient></defs>' +
+        '<circle cx="51" cy="51" r="42" fill="url(#' + id + ')"/>' +
+        '<path d="M51 22 C64 40 71 49 62 63 A16 16 0 1 1 40 63 C33 51 45 43 45 30 C49 34 49 39 52 41 C55 36 52 28 51 22 Z" fill="#ffe6a8"/>' +
+        '<path d="M51 44 C58 51 60 56 55 63 A9 9 0 1 1 45 61 C45 54 49 50 51 44 Z" fill="#e8721f"/></svg>';
     }
     function currentWaveBadge(total) {
       var earned = null, next = null, i;
@@ -402,6 +413,20 @@
       if (reduceMotion) return;
       var t = document.createElement('div'); t.className = 'toast';
       t.innerHTML = waveBadgeSvg(120) + '<div class="cap">' + name + '</div>';
+      document.body.appendChild(t);
+      var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.4)' },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .45 },
+        { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .8 },
+        { opacity: 0, transform: 'translate(-50%,-50%) scale(.9) translateY(-26px)' }],
+        { duration: 1700, easing: 'ease' });
+      a.onfinish = function () { t.remove(); };
+    }
+    function mintEffort(name) {
+      buzz([20, 40, 40]);
+      fireBurst(window.innerWidth / 2, window.innerHeight * 0.4, 22);
+      if (reduceMotion) return;
+      var t = document.createElement('div'); t.className = 'toast';
+      t.innerHTML = flameSvg(120) + '<div class="cap">' + name + '</div>';
       document.body.appendChild(t);
       var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.4)' },
         { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .45 },
@@ -464,10 +489,10 @@
     var lastState = null;  // last server-confirmed state, for reverting failed optimistic writes
 
     /*__CELEB_START__*/
-    function celebrationsFor(prev, next, waveTiers) {
+    function celebrationsFor(prev, next, waveTiers, effortTiers) {
       var PR = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
       var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
-      var out = { countUp: [], mints: [], dailyComplete: false, waveBadges: [] };
+      var out = { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] };
       if (!prev) return out;
       ['prayers', 'sober', 'workout'].forEach(function (h) {
         if (next.summary[h].current > prev.summary[h].current) out.countUp.push(h);
@@ -486,6 +511,10 @@
       var pt = (prev.summary.urges && prev.summary.urges.total) || 0;
       var nt = (next.summary.urges && next.summary.urges.total) || 0;
       WAVE.forEach(function (w) { if (pt < w[1] && nt >= w[1]) out.waveBadges.push(w[0]); });
+      var EFFORT = effortTiers || [['Ember', 3], ['Flame', 10], ['Blaze', 25], ['Furnace', 60], ['Inferno', 150]];
+      var pe = (prev.summary.workout && prev.summary.workout.extra) || 0;
+      var ne = (next.summary.workout && next.summary.workout.extra) || 0;
+      EFFORT.forEach(function (w) { if (pe < w[1] && ne >= w[1]) out.effortBadges.push(w[0]); });
       return out;
     }
     /*__CELEB_END__*/
@@ -567,6 +596,10 @@
       var total = (s.urges && s.urges.total) || 0;
       WAVE_TIERS.forEach(function (w) {
         cells += acell(w[0], waveBadgeSvg(46), total >= w[1] ? 1 : 0, w[1] + ' urges ridden');
+      });
+      var extra = (s.workout && s.workout.extra) || 0;
+      EFFORT_TIERS.forEach(function (w) {
+        cells += acell(w[0], flameSvg(46), extra >= w[1] ? 1 : 0, w[1] + ' extra workout days');
       });
       el('awardsGrid').innerHTML = cells;
     }
@@ -727,6 +760,7 @@
         if (cfg.dayTiers) DAY_TIERS = cfg.dayTiers;
         if (cfg.weekTiers) WEEK_TIERS = cfg.weekTiers;
         if (cfg.waveTiers) WAVE_TIERS = cfg.waveTiers;
+        if (cfg.effortTiers) EFFORT_TIERS = cfg.effortTiers;
         refresh();
       })
       .catch(function () { banner('This page is live only on the shared link.'); });

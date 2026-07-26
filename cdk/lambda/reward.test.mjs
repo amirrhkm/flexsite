@@ -23,7 +23,7 @@ function state(over) {
 
 test('first load (prev null) celebrates nothing', () => {
   const r = celebrationsFor(null, state());
-  assert.deepEqual(r, { countUp: [], mints: [], dailyComplete: false, waveBadges: [] });
+  assert.deepEqual(r, { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
 });
 
 test('a streak increase is a count-up for that habit only', () => {
@@ -44,10 +44,10 @@ test('a pooled medal increase mints that tier', () => {
 });
 
 test('no change and decreases celebrate nothing', () => {
-  assert.deepEqual(celebrationsFor(state(), state()), { countUp: [], mints: [], dailyComplete: false, waveBadges: [] });
+  assert.deepEqual(celebrationsFor(state(), state()), { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
   const lower = state({ summary: { prayers: { current: 9 }, sober: { current: 10 }, workout: { current: 2 },
     medals: { bronze: 0, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 } } });
-  assert.deepEqual(celebrationsFor(state(), lower), { countUp: [], mints: [], dailyComplete: false, waveBadges: [] });
+  assert.deepEqual(celebrationsFor(state(), lower), { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
 });
 
 test('dailyComplete fires once when today becomes all-5-prayers + sober', () => {
@@ -77,4 +77,15 @@ test('celebrationsFor uses the passed wave tiers', () => {
     urges: { today: 1, total: total },
   } }); };
   assert.deepEqual(celebrationsFor(s(2), s(3), [['Tiny', 3]]).waveBadges, ['Tiny']);
+});
+
+test('celebrationsFor flags an effort badge when extra crosses a threshold', () => {
+  var s = function (extra) { return state({ summary: {
+    prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2, extra: extra },
+    medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
+    urges: { today: 0, total: 0 },
+  } }); };
+  assert.deepEqual(celebrationsFor(s(2), s(3)).effortBadges, ['Ember']);
+  assert.deepEqual(celebrationsFor(s(3), s(4)).effortBadges, []);
+  assert.deepEqual(celebrationsFor(s(2), s(3), null, [['X', 3]]).effortBadges, ['X']);
 });
