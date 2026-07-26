@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -58,13 +59,19 @@ export class SiteStack extends cdk.Stack {
       },
     });
 
+    // Single source of truth for rule numbers (workout target, streak/wave tiers),
+    // also imported by the Lambda — merged into config.json so pages read the same values.
+    const lockinConfig = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', 'lambda', 'lockin-config.json'), 'utf8'),
+    );
+
     new s3deploy.BucketDeployment(this, 'DeployPlans', {
       sources: [
         s3deploy.Source.asset(CONTENT_DIR, {
           exclude: ['*', '!*.html'],
         }),
-        // Pages fetch this at runtime to find the voting endpoint.
-        s3deploy.Source.jsonData('config.json', { voteApiUrl: voteUrl.url }),
+        // Pages fetch this at runtime: voting endpoint + the shared rule numbers.
+        s3deploy.Source.jsonData('config.json', { voteApiUrl: voteUrl.url, ...lockinConfig }),
       ],
       destinationBucket: bucket,
       // Default prune:true keeps the bucket in sync — deleting a local
