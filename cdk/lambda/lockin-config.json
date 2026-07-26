@@ -2,5 +2,6 @@
   "workoutTarget": 3,
   "dayTiers": [["bronze", 7], ["silver", 30], ["gold", 90], ["sapphire", 180], ["diamond", 365]],
   "weekTiers": [["bronze", 4], ["silver", 12], ["gold", 26], ["sapphire", 39], ["diamond", 52]],
-  "waveTiers": [["Ripple", 10], ["Swell", 50], ["Breaker", 100], ["Tide", 250], ["Ocean", 500]]
+  "waveTiers": [["Ripple", 10], ["Swell", 50], ["Breaker", 100], ["Tide", 250], ["Ocean", 500]],
+  "effortTiers": [["Ember", 3], ["Flame", 10], ["Blaze", 25], ["Furnace", 60], ["Inferno", 150]]
 }

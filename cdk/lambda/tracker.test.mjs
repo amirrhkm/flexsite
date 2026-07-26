@@ -125,6 +125,15 @@ test('workout: a week with >=3 sessions is on-target', () => {
   assert.equal(s.workout.current, 1); // one on-target week
 });
 
+test('computeSummary sums workout extra days beyond the target', () => {
+  const days = ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23', '2026-07-24']
+    .map((d) => ({ date: d, prayers: {}, workout: true, sober: false }));
+  const s = computeSummary(days, '2026-07-24');
+  assert.equal(s.workout.extra, 2);
+  const few = ['2026-07-20', '2026-07-21'].map((d) => ({ date: d, prayers: {}, workout: true, sober: false }));
+  assert.equal(computeSummary(few, '2026-07-21').workout.extra, 0);
+});
+
 test('computeSummary sums urges (today + all-time), missing = 0', () => {
   const days = [
     { date: '2026-07-19', prayers: {}, workout: false, sober: false, urges: 3 },

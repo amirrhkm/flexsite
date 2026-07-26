@@ -111,11 +111,14 @@ export function computeSummary(days, today) {
 
   const wRuns = runLengths(weekOrd);
   const wCurrent = streakCurrent(weekOrd, weekNum(today));
+  let workoutExtra = 0;
+  for (const [, c] of weekCounts) if (c > WORKOUT_TARGET) workoutExtra += c - WORKOUT_TARGET;
   const workout = {
     current: wCurrent,
     best: bestRun(weekOrd),
     thisWeekSessions: weekCounts.get(wsToday) || 0,
     target: WORKOUT_TARGET,
+    extra: workoutExtra,
     forging: forging(wCurrent, WEEK_TIERS),
     _medals: medalsFromRuns(wRuns, WEEK_TIERS),
     _comeback: comebackCount(wRuns, 4),
