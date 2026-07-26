@@ -1,8 +1,10 @@
+import cfg from './lockin-config.json' with { type: 'json' };
+
 export const TRACKER_POLL = 'lockin';
 export const PRAYERS = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
-export const WORKOUT_TARGET = 3;
-export const DAY_TIERS = [['bronze', 7], ['silver', 30], ['gold', 90], ['sapphire', 180], ['diamond', 365]];
-export const WEEK_TIERS = [['bronze', 4], ['silver', 12], ['gold', 26], ['sapphire', 39], ['diamond', 52]];
+export const WORKOUT_TARGET = cfg.workoutTarget;
+export const DAY_TIERS = cfg.dayTiers;
+export const WEEK_TIERS = cfg.weekTiers;
 
 export function todayInMYT(nowMs) {
   return new Date(nowMs + 8 * 3600 * 1000).toISOString().slice(0, 10);
