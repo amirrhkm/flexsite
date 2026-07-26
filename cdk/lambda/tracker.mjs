@@ -1,6 +1,6 @@
 export const TRACKER_POLL = 'lockin';
 export const PRAYERS = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
-export const WORKOUT_TARGET = 4;
+export const WORKOUT_TARGET = 3;
 export const DAY_TIERS = [['bronze', 7], ['silver', 30], ['gold', 90], ['sapphire', 180], ['diamond', 365]];
 export const WEEK_TIERS = [['bronze', 4], ['silver', 12], ['gold', 26], ['sapphire', 39], ['diamond', 52]];
 

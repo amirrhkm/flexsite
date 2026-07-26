@@ -10,7 +10,7 @@ import {
 
 test('constants', () => {
   assert.equal(TRACKER_POLL, 'lockin');
-  assert.equal(WORKOUT_TARGET, 4);
+  assert.equal(WORKOUT_TARGET, 3);
   assert.deepEqual(PRAYERS, ['subuh', 'zohor', 'asar', 'maghrib', 'isya']);
   assert.deepEqual(DAY_TIERS.map((t) => t[1]), [7, 30, 90, 180, 365]);
   assert.deepEqual(WEEK_TIERS.map((t) => t[1]), [4, 12, 26, 39, 52]);
@@ -115,12 +115,13 @@ test('an incomplete prayer day does not count; sober can still count', () => {
   assert.equal(s.totals.daysTracked, 1);
 });
 
-test('workout: a week with >=4 sessions is on-target', () => {
-  // Mon..Thu of the week containing 2026-07-21 (week starts 2026-07-20)
-  const days = ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23']
+test('workout: a week with >=3 sessions is on-target', () => {
+  // Mon..Wed of the week containing 2026-07-21 (week starts 2026-07-20)
+  const days = ['2026-07-20', '2026-07-21', '2026-07-22']
     .map((d) => ({ date: d, prayers: {}, workout: true, sober: false }));
-  const s = computeSummary(days, '2026-07-23');
-  assert.equal(s.workout.thisWeekSessions, 4);
+  const s = computeSummary(days, '2026-07-22');
+  assert.equal(s.workout.target, 3);
+  assert.equal(s.workout.thisWeekSessions, 3);
   assert.equal(s.workout.current, 1); // one on-target week
 });
 
