@@ -69,3 +69,12 @@ test('celebrationsFor flags a wave badge when total crosses a threshold', () => 
   assert.deepEqual(celebrationsFor(withUrges(11), withUrges(12)).waveBadges, []);
   assert.deepEqual(celebrationsFor(null, withUrges(10)).waveBadges, []);
 });
+
+test('celebrationsFor uses the passed wave tiers', () => {
+  var s = function (total) { return state({ summary: {
+    prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2 },
+    medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
+    urges: { today: 1, total: total },
+  } }); };
+  assert.deepEqual(celebrationsFor(s(2), s(3), [['Tiny', 3]]).waveBadges, ['Tiny']);
+});

@@ -362,7 +362,7 @@
       a.onfinish = function () { t.remove(); };
     }
     function runCelebrations(prev, next) {
-      var c = celebrationsFor(prev, next);
+      var c = celebrationsFor(prev, next, WAVE_TIERS);
       c.countUp.forEach(function (h) {
         var cap = h.charAt(0).toUpperCase() + h.slice(1);
         countUp(el('num' + cap), prev.summary[h].current, next.summary[h].current);
@@ -464,7 +464,7 @@
     var lastState = null;  // last server-confirmed state, for reverting failed optimistic writes
 
     /*__CELEB_START__*/
-    function celebrationsFor(prev, next) {
+    function celebrationsFor(prev, next, waveTiers) {
       var PR = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
       var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
       var out = { countUp: [], mints: [], dailyComplete: false, waveBadges: [] };
@@ -482,7 +482,7 @@
         return PR.every(function (p) { return d.prayers && d.prayers[p] === true; }) && d.sober === true;
       };
       if (complete(next) && !complete(prev)) out.dailyComplete = true;
-      var WAVE = [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
+      var WAVE = waveTiers || [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
       var pt = (prev.summary.urges && prev.summary.urges.total) || 0;
       var nt = (next.summary.urges && next.summary.urges.total) || 0;
       WAVE.forEach(function (w) { if (pt < w[1] && nt >= w[1]) out.waveBadges.push(w[0]); });
@@ -722,7 +722,13 @@
 
     fetch('./config.json')
       .then(function (r) { return r.json(); })
-      .then(function (cfg) { apiUrl = cfg.voteApiUrl; refresh(); })
+      .then(function (cfg) {
+        apiUrl = cfg.voteApiUrl;
+        if (cfg.dayTiers) DAY_TIERS = cfg.dayTiers;
+        if (cfg.weekTiers) WEEK_TIERS = cfg.weekTiers;
+        if (cfg.waveTiers) WAVE_TIERS = cfg.waveTiers;
+        refresh();
+      })
       .catch(function () { banner('This page is live only on the shared link.'); });
   })();
   </script>
