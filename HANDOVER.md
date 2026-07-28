@@ -11,9 +11,12 @@ HTML file in `plan/`, served from public S3, backed by one shared Lambda **Funct
 one DynamoDB table. Friends-scale, mostly-static, fresh-on-action, hosted on the AWS
 **always-free tier** (~RM0). One CDK stack `Site` · account `761018890563` · `ap-southeast-1`.
 
-Two use cases live today:
+Three use cases live today:
 - **`plan/gokart-proposal.html`** — the original date/track poll.
 - **`plan/lockin.html`** — *Lock In*, a private single-user habit tracker (the bulk of the work).
+- **`plan/moware.html`** — *Moware* ("money aware"), a private spend tracker: log transactions
+  with category/remarks/treat flag, monthly donut + receipt-tape ledger, derived subscription
+  periods.
 
 Live (share the HTTPS object URL, not the HTTP website endpoint):
 `https://site-sitebucket397a1860-lvgwefwlhc5r.s3.ap-southeast-1.amazonaws.com/lockin.html`
@@ -23,6 +26,8 @@ Live (share the HTTPS object URL, not the HTTP website endpoint):
 ```
 plan/lockin.html            the whole Lock In app (one self-contained file: inline CSS/JS)
 plan/gokart-proposal.html   the poll
+plan/moware.html            Moware — the spend tracker (one self-contained file)
+cdk/lambda/moware.mjs       PURE derivation for Moware (computeMonth); unit-tested
 cdk/lib/site-stack.ts       the CDK stack (S3 + DynamoDB + Lambda Fn URL + BucketDeployment)
 cdk/lambda/index.mjs        Lambda handler — routes gokart vs tracker by poll id
 cdk/lambda/tracker.mjs      PURE derivation logic (streaks/medals/summary); unit-tested
@@ -41,6 +46,14 @@ docs/superpowers/plans/      implementation plans, one per feature
 - `GET ?poll=lockin` → `{ days, today, summary }`. `POST {poll:"lockin",date,prayers,workout,sober,urges}`
   upserts one day (only **today or yesterday MYT**, else 400) and returns the same shape.
 - Day boundary is **midnight Malaysia time (UTC+8)**, computed server-side (`todayInMYT`).
+- Moware (`poll="moware"`) shares the table with three sort-key prefixes: `t#<date>#<id>` a
+  transaction, `s#<id>` a subscription period, `meta#categories` the category string set.
+  `begins_with("t#<YYYY-MM>")` scopes a month, so no full-history scan. **Amounts are integer
+  sen everywhere**; ringgit exists only in page formatting. Subscription spend is **derived**
+  per month by `subActive()` — never materialised as rows — and `endMonth` is **inclusive**, so
+  the month you cancel in still counts. `GET ?poll=moware&month=` → `{month, today, categories,
+  subs, summary}` (`subs` is every record including ended; `summary.subscriptions` only those
+  active that month). `POST` discriminates on `op`: `txn` / `delTxn` / `sub` / `cancelSub`.
 - `summary` shape the page consumes:
   ```
   prayers/sober: { current, best, thisWeek[7], forging }
@@ -122,6 +135,10 @@ docs/superpowers/plans/      implementation plans, one per feature
   blue for the urge block, stone-grey for seawall badges, warm flame for effort badges;
   **no punishing red**.
 - **Medal SVG gradient ids must be unique** (`svgSeq`) — many render at once in the grid.
+- **Moware's chart palette is measured, not chosen.** Four hues, validated all-pairs in both
+  themes; only two of the 70 four-hue subsets pass. Do not add a fifth or tweak the hex values,
+  and do not remove the legend — it is the light-mode contrast relief that makes the palette
+  compliant. The numbers and reasoning are in the Moware spec.
 - **No browser in the dev environment** (Chrome extension declined). Verify with
   `node --check` on the extracted script + `tidy` + structural greps + occasional jsdom logic
   checks; **the real visual pass is the user on their phone after deploy.**

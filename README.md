@@ -59,6 +59,9 @@ Full detail: **[cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md)**.
   prescribes push-ups and banks the reps toward seawall badges, extra-effort flame badges,
   an Achievements tab, and per-habit history
   calendars — all event-based, all on the free tier.
+- **`plan/moware.html`** — *Moware*, a private spend tracker on the same backend: log a
+  purchase with category, remarks and a for-me/treat flag; a monthly donut over categories or
+  subscriptions-vs-regular, a receipt-tape ledger, and subscription periods derived per month.
 - **`cdk/`** — the stack (`lib/site-stack.ts`), the single Lambda (`lambda/index.mjs` +
   the pure, unit-tested `lambda/tracker.mjs`), and the shared rule config
   (`lambda/lockin-config.json`).
