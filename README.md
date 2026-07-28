@@ -53,18 +53,25 @@ Full detail: **[cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md)**.
 
 ## What's in here
 
-- **`plan/gokart-proposal.html`** — a friends' go-kart date/track poll (the original use case).
-- **`plan/lockin.html`** — *Lock In*, a private habit tracker built on the same backend:
-  prayer / sober / workout streaks with progress rings and medals, an urge tool that
-  prescribes push-ups and banks the reps toward seawall badges, extra-effort flame badges,
-  an Achievements tab, and per-habit history
-  calendars — all event-based, all on the free tier.
-- **`plan/moware.html`** — *Moware*, a private spend tracker on the same backend: log a
-  purchase with category, remarks and a for-me/treat flag; a monthly donut over categories or
-  subscriptions-vs-regular, a receipt-tape ledger, and subscription periods derived per month.
-- **`cdk/`** — the stack (`lib/site-stack.ts`), the single Lambda (`lambda/index.mjs` +
-  the pure, unit-tested `lambda/tracker.mjs`), and the shared rule config
-  (`lambda/lockin-config.json`).
+### The three sites
+
+Each is one self-contained HTML file, sharing the same Lambda and the same DynamoDB table —
+kept apart by a `poll` id, so a new use case is a new file and a new id, nothing more.
+
+| Page | `poll` id | What it is |
+|---|---|---|
+| **`plan/gokart-proposal.html`** | per-poll | A friends' go-kart poll — pick a date and a track, see everyone's votes laid out as a starting grid. |
+| **`plan/lockin.html`** | `lockin` | *Lock In* — a private habit tracker. Prayer, sober and workout streaks with progress rings, a permanent medal bank, and an urge tool that prescribes push-ups. |
+| **`plan/moware.html`** | `moware` | *Moware* ("money aware") — a private spend tracker. Log a purchase with category and remarks, see where the month went on a donut and a receipt-tape ledger. |
+
+The two trackers are single-user and private; the poll is meant to be shared. None of them
+have auth — see [cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md) for that trade-off.
+
+### The rest
+
+- **`cdk/`** — the stack (`lib/site-stack.ts`), the single Lambda (`lambda/index.mjs`), the
+  pure unit-tested derivation modules (`lambda/tracker.mjs` for Lock In, `lambda/moware.mjs`
+  for Moware), and Lock In's shared rule config (`lambda/lockin-config.json`).
 - **`docs/superpowers/`** — the specs and implementation plans behind each feature.
 
 ```
