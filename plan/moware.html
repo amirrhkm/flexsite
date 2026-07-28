@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en" data-theme="dawn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef2f4">
+<title>Moware</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="night"]{
+    --bg:#0d141c;--card:#111c27;--edge:#1d2c3a;--ink:#eaf2fb;--mut:#8ba0b6;--dim:#5f7386;
+    --acc:#33a98e;--acc-dim:#1a6b59;--tape:#0f1a24;--other:#5b6b78;
+    --c1:#3987e5;--c2:#c98500;--c3:#d55181;--c4:#008300;
+    --fabsh:0 8px 22px -6px rgba(0,0,0,.7);
+    color-scheme:dark}
+  :root[data-theme="dawn"]{
+    --bg:#eef2f4;--card:#ffffff;--edge:#dde4e8;--ink:#16232b;--mut:#5c6f7a;--dim:#8798a3;
+    --acc:#137a64;--acc-dim:#9fcfc1;--tape:#f7fafb;--other:#9aa8b2;
+    --c1:#2a78d6;--c2:#eda100;--c3:#e87ba4;--c4:#008300;
+    --fabsh:0 8px 20px -6px rgba(13,74,62,.42);
+    color-scheme:light}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0 auto;max-width:460px;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:18px 16px calc(84px + env(safe-area-inset-bottom));
+    padding-top:max(18px,env(safe-area-inset-top))}
+  .num,h1,.mo,.big,.hd{font-family:'Fraunces',Georgia,serif}
+  .tnum{font-variant-numeric:tabular-nums}
+  button{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  h1{font-size:20px;margin:0;line-height:1}
+  #themeToggle{background:none;border:1px solid var(--edge);color:var(--mut);border-radius:10px;
+    padding:7px 11px;font-size:11.5px;font-weight:500;cursor:pointer}
+
+  #banner{display:none;background:#fdf1d6;color:#7a5a1e;border:1px solid #e2c98f;border-radius:10px;
+    padding:11px 13px;font-size:12.5px;margin-bottom:12px;line-height:1.4}
+  :root[data-theme="night"] #banner{background:#3a2a12;color:#f4d9a6;border-color:#6b4f1e}
+  #banner.show{display:block}
+  .mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .mhead button{background:none;border:1px solid var(--edge);color:var(--ink);border-radius:9px;
+    width:34px;height:34px;cursor:pointer;font-size:16px}
+  .mhead button:disabled{opacity:.28;cursor:default}
+  .mo{font-size:16px;font-weight:700}
+
+  .hero{background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:20px 16px 8px;text-align:center}
+  .herolbl{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+  .big{font-size:38px;font-weight:900;line-height:1.05;margin-top:4px}
+  .big small{font-family:'Inter';font-weight:600;font-size:16px;color:var(--mut);margin-right:3px}
+  .treat{font-size:11px;color:var(--mut);margin-top:5px}
+  .treat b{font-family:'Fraunces',serif;color:var(--acc)}
+
+  .donutwrap{position:relative;width:168px;height:168px;margin:6px auto 2px}
+  .donutwrap svg{transform:rotate(-90deg);display:block}
+  .dmid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+  .dmid .dv{font-family:'Fraunces',serif;font-weight:900;font-size:15px;color:var(--mut)}
+  .dmid .dl{font-size:8.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-top:2px}
+
+  .seg{display:flex;gap:0;margin:16px 0 2px;border:1px solid var(--edge);border-radius:10px;overflow:hidden}
+  .seg button{flex:1;background:none;border:none;color:var(--mut);padding:9px 0;font-size:11.5px;font-weight:600;cursor:pointer}
+  .seg button.on{background:var(--acc);color:var(--bg)}
+  :root[data-theme="dawn"] .seg button.on{color:#fff}
+
+  .cats{text-align:left;margin-top:10px}
+  .crow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--edge)}
+  .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .cnm{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cvl{font-size:13px;font-weight:600;white-space:nowrap}
+  .cpc{color:var(--dim);margin-left:7px;font-weight:400;font-size:11px}
+
+
+  /* receipt tape — the signature element */
+  .tape{margin-top:20px;background:var(--tape);border:1px solid var(--edge);border-radius:3px;padding:16px 14px 14px;position:relative}
+  .tape::before{content:"";position:absolute;left:0;right:0;top:-1px;height:7px;
+    background:radial-gradient(circle at 5px -2px,transparent 0 5px,var(--edge) 5px 5.6px,transparent 5.7px) repeat-x;
+    background-size:11px 7px}
+  .tapehd{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    border-bottom:1px dashed var(--edge);padding-bottom:8px;margin-bottom:4px}
+  .tline{display:flex;align-items:baseline;gap:6px;padding:8px 0;font-size:12.5px}
+  .tline .td{color:var(--dim);font-size:10.5px;min-width:30px}
+  .tline .tc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44%}
+  .tnote{font-size:10.5px;color:var(--dim);padding:0 0 8px 36px;margin-top:-6px}
+  .tline .lead{flex:1;border-bottom:1px dotted var(--edge);transform:translateY(-3px);min-width:8px}
+  .tline .ta{font-weight:600}
+  .tline .tt{font-size:9px;color:var(--acc);border:1px solid var(--acc-dim);border-radius:4px;padding:1px 4px}
+  .tline .del{background:none;border:none;color:var(--dim);cursor:pointer;padding:0 0 0 4px;font-size:14px;line-height:1}
+  .tfoot{border-top:1px dashed var(--edge);margin-top:6px;padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+  .empty{color:var(--dim);font-size:12px;text-align:center;padding:18px 0}
+
+  /* subscriptions */
+  .subtot{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:14px;text-align:center;margin-bottom:14px}
+  .subtot .n{font-family:'Fraunces',serif;font-weight:900;font-size:26px}
+  .subtot .n small{font-family:'Inter';font-size:13px;color:var(--mut);font-weight:600}
+  .subtot .c{font-size:11px;color:var(--mut);margin-top:3px}
+  .srow{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:13px 14px;margin-bottom:9px;
+    display:flex;align-items:center;gap:12px}
+  .srow .si{flex:1;min-width:0}
+  .srow .sn{font-size:13.5px;font-weight:600}
+  .srow .sm{font-size:10.5px;color:var(--dim);margin-top:2px}
+  .srow .sa{font-weight:600;font-size:13.5px;white-space:nowrap}
+  .cancel{background:none;border:1px solid var(--edge);color:var(--mut);border-radius:8px;padding:6px 9px;font-size:11px;cursor:pointer}
+  details.ended{margin-top:10px}
+  details.ended summary{font-size:11.5px;color:var(--dim);cursor:pointer;padding:8px 0}
+  .addbtn{width:100%;margin-top:6px;border:1px dashed var(--edge);background:none;color:var(--mut);
+    border-radius:12px;padding:14px;font-size:13px;font-weight:500;cursor:pointer}
+
+  .view{display:none}
+  .view.on{display:block}
+  .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;max-width:460px;margin:0 auto;
+    background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);
+    border-top:1px solid var(--edge);padding-bottom:env(safe-area-inset-bottom);z-index:30}
+  .tabs button{flex:1;background:none;border:none;color:var(--mut);font-size:11.5px;font-weight:600;
+    padding:11px 0 13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+  .tabs button.on{color:var(--acc)}
+  .tabs button.on::before{content:"";position:absolute;top:0;left:26%;right:26%;height:2px;background:var(--acc);border-radius:2px}
+  .tabs svg{width:19px;height:19px}
+  /* centre action — not a tab; opens the log sheet from either view */
+  .tabs button.fab{flex:none;width:78px;padding:0;align-items:center;justify-content:center}
+  .tabs button.fab::before{display:none}
+  .fab i{width:54px;height:54px;border-radius:50%;background:var(--acc);
+    display:grid;place-items:center;border:4px solid var(--bg);box-shadow:var(--fabsh);
+    transform:translateY(-15px);transition:transform .1s cubic-bezier(.2,.8,.2,1)}
+  .fab i svg{width:23px;height:23px;stroke:#fff;stroke-width:2.6;display:block}
+  .fab:active i{transform:translateY(-15px) scale(.92)}
+
+  /* sheets */
+  .sheet{position:fixed;inset:0;background:rgba(4,10,14,.62);display:none;align-items:flex-end;z-index:60}
+  :root[data-theme="dawn"] .sheet{background:rgba(22,35,43,.34)}
+  .sheet.on{display:flex}
+  .sc{background:var(--card);border-top-left-radius:20px;border-top-right-radius:20px;
+    width:100%;max-width:460px;margin:0 auto;padding:18px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height:92vh;overflow:auto}
+  .hd{font-size:17px;font-weight:700;margin-bottom:14px}
+  .fl{font-size:9.5px;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;margin:14px 0 6px}
+  .amtwrap{display:flex;align-items:center;gap:8px;border:1px solid var(--edge);border-radius:12px;padding:12px 14px}
+  .amtwrap span{color:var(--mut);font-weight:600}
+  .amtwrap input{flex:1;background:none;border:none;color:var(--ink);font-family:'Fraunces',serif;
+    font-weight:900;font-size:28px;width:100%;outline:none}
+  input[type=text],input[type=date],input[type=month]{width:100%;background:none;border:1px solid var(--edge);
+    border-radius:11px;padding:12px 13px;color:var(--ink);font-size:14px;outline:none}
+  input:focus{border-color:var(--acc)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .chips button{border:1px solid var(--edge);background:none;color:var(--mut);border-radius:999px;
+    padding:7px 12px;font-size:12px;cursor:pointer}
+  .chips button.on{border-color:var(--acc);color:var(--acc)}
+  .two{display:flex;gap:8px}
+  .two button{flex:1;border:1px solid var(--edge);background:none;color:var(--mut);border-radius:11px;
+    padding:12px 0;font-size:12.5px;font-weight:600;cursor:pointer}
+  .two button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--ink)}
+  .go{width:100%;margin-top:20px;border:none;border-radius:12px;background:var(--acc);color:var(--bg);
+    padding:15px;font-weight:600;font-size:15px;cursor:pointer}
+  :root[data-theme="dawn"] .go{color:#fff}
+  .cx{background:none;border:none;color:var(--mut);width:100%;padding:12px;font-size:13px;cursor:pointer;margin-top:2px}
+  .note{font-size:10.5px;color:var(--dim);margin-top:8px;line-height:1.45}
+</style>
+</head>
+<body>
+
+<div class="topbar"><h1>Moware</h1><button id="themeToggle" type="button">Theme</button></div>
+<div id="banner"></div>
+
+<div class="view on" id="vOverview">
+  <div class="mhead">
+    <button id="mPrev" type="button">‹</button>
+    <span class="mo" id="moLabel">July 2026</span>
+    <button id="mNext" type="button">›</button>
+  </div>
+
+  <div class="hero">
+    <div class="herolbl">Total spent</div>
+    <div class="big tnum" id="heroTotal"><small>RM</small>0</div>
+    <div class="treat" id="heroTreat"></div>
+    <div class="seg" id="mode">
+      <button data-m="cat" class="on" type="button">Categories</button>
+      <button data-m="split" type="button">Subscriptions</button>
+    </div>
+    <div class="donutwrap">
+      <svg id="donut" width="168" height="168" viewBox="0 0 168 168"></svg>
+      <div class="dmid"><div class="dv tnum" id="dCount">0</div><div class="dl" id="dLbl">categories</div></div>
+    </div>
+    <div class="cats" id="cats"></div>
+  </div>
+
+  <div class="tape">
+    <div class="tapehd"><span id="tapeMo">JULY 2026</span><span>ENTRIES</span></div>
+    <div id="tape"></div>
+    <div class="tfoot"><span>Logged total</span><span class="tnum" id="tapeTotal">RM 0</span></div>
+  </div>
+</div>
+
+<div class="view" id="vSubs">
+  <div class="subtot">
+    <div class="n tnum" id="subTotal"><small>RM</small>0<small>/mo</small></div>
+    <div class="c" id="subCount">across 0 subscriptions</div>
+  </div>
+  <div id="subList"></div>
+  <button class="addbtn" id="openSub" type="button">+ Add a subscription</button>
+  <details class="ended" id="endedWrap">
+    <summary id="endedSum">Ended subscriptions</summary>
+    <div id="endedList"></div>
+  </details>
+</div>
+
+<nav class="tabs">
+  <button id="tabOverview" class="on" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v8h8"/></svg>Overview</button>
+  <button id="fabLog" class="fab" type="button" aria-label="Log a spend"><i>
+    <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </i></button>
+  <button id="tabSubs" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Subscriptions</button>
+</nav>
+
+<!-- sheets sit before the script, per the DOM-order gotcha -->
+<div class="sheet" id="logSheet">
+  <div class="sc">
+    <div class="hd">Log a spend</div>
+    <div class="fl">Amount</div>
+    <div class="amtwrap"><span>RM</span><input id="amt" type="text" inputmode="decimal" placeholder="0.00"></div>
+    <div class="fl">Category</div>
+    <input id="cat" type="text" placeholder="Type a category">
+    <div class="chips" id="catChips"></div>
+    <div class="note" id="catNew"></div>
+    <div class="fl">Remarks <span style="text-transform:none;letter-spacing:0">— optional</span></div>
+    <input id="note" type="text" maxlength="80" placeholder="badminton at Setia">
+    <div class="fl">Who was it for</div>
+    <div class="two"><button id="forMe" class="on" type="button">For me</button><button id="forThem" type="button">A treat</button></div>
+    <div class="fl">Date</div>
+    <input id="date" type="date">
+    <button class="go" id="doLog" type="button">Log it</button>
+    <button class="cx" id="cxLog" type="button">Cancel</button>
+  </div>
+</div>
+
+<div class="sheet" id="subSheet">
+  <div class="sc">
+    <div class="hd">Add a subscription</div>
+    <div class="fl">Name</div>
+    <input id="sName" type="text" placeholder="Netflix">
+    <div class="fl">Amount per month</div>
+    <div class="amtwrap"><span>RM</span><input id="sAmt" type="text" inputmode="decimal" placeholder="0.00"></div>
+    <div class="fl">Category</div>
+    <input id="sCat" type="text" placeholder="Entertainment">
+    <div class="chips" id="sCatChips"></div>
+    <div class="fl">Charging since</div>
+    <input id="sStart" type="month">
+    <div class="note">Set an earlier month if you have been paying for a while — those months will then show it too.</div>
+    <button class="go" id="doSub" type="button">Add it</button>
+    <button class="cx" id="cxSub" type="button">Cancel</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var el = function (id) { return document.getElementById(id); };
+  var POLL = 'moware';
+  var apiUrl = null;
+  var TODAY = null;          // server-owned (MYT), set on first render
+  var THIS_MONTH = null;
+  var view = null;           // the month being viewed
+  var mode = 'cat', treat = false;
+  var summary = null;        // last server-confirmed month summary
+  var cats = [];
+  var allSubs = [];          // every subscription, including ended ones
+  var busy = false;
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // ---- helpers ----
+  function rm(sen) { return (sen / 100).toLocaleString('en-MY', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+  function rm0(sen) { return Math.round(sen / 100).toLocaleString('en-MY'); }
+  function moLabel(m) { return MONTHS[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); }
+  function addMonth(m, n) {
+    var y = +m.slice(0, 4), mm = +m.slice(5, 7) - 1 + n;
+    y += Math.floor(mm / 12); mm = ((mm % 12) + 12) % 12;
+    return y + '-' + String(mm + 1).padStart(2, '0');
+  }
+  // sequential ramp — colour encodes magnitude, identity comes from the labels
+  // 4 validated hues (blue/yellow/magenta/green) + a neutral remainder.
+  // Assigned by rank: within any one chart every slice is a distinct hue, and the
+  // legend sits beside the ring so identity is always read alongside the colour.
+  var HUES = ['--c1','--c2','--c3','--c4'];
+  function sliceColor(i) { return i < HUES.length ? 'var(' + HUES[i] + ')' : 'var(--other)'; }
+  function rowHue(r, i) { return r.hue ? r.hue : r.isOther ? 'var(--other)' : sliceColor(i); }
+
+  // Both views re-slice the same server shape client-side — no round trip.
+  function sliceRows(sum) {
+    if (mode === 'split') {
+      // Only two entities, so colour is pinned to each one (never to rank) —
+      // Regular is always blue, Subscriptions always yellow, every month.
+      return { rows:[
+        { category:'Regular spending', amount:sum.loggedTotal, hue:'var(--c1)' },
+        { category:'Subscriptions',     amount:sum.subsTotal,   hue:'var(--c2)' }
+      ].filter(function (r) { return r.amount > 0; }), total:sum.total };
+    }
+    var rows = sum.byCategory.slice().sort(function (a, b) { return b.amount - a.amount; });
+    var total = rows.reduce(function (a, c) { return a + c.amount; }, 0);
+    if (rows.length > 5) {
+      var head = rows.slice(0, 4), rest = rows.slice(4);
+      head.push({ category:'Other (' + rest.length + ')', amount:rest.reduce(function (a, c) { return a + c.amount; }, 0), isOther:true });
+      rows = head;
+    }
+    return { rows:rows, total:total };
+  }
+
+  function drawDonut(rows, total) {
+    var R = 66, W = 15, C = 2 * Math.PI * R, GAP = 3, off = 0, out = '';
+    out += '<circle cx="84" cy="84" r="' + R + '" fill="none" stroke="var(--edge)" stroke-width="' + W + '"/>';
+    if (total > 0) {
+      rows.forEach(function (r, i) {
+        var frac = r.amount / total, len = Math.max(frac * C - GAP, 1);
+        out += '<circle cx="84" cy="84" r="' + R + '" fill="none" stroke="' + rowHue(r, i) + '" stroke-width="' + W +
+          '" stroke-linecap="butt" stroke-dasharray="' + len + ' ' + (C - len) +
+          '" stroke-dashoffset="' + (-off) + '"/>';
+        off += frac * C;
+      });
+    }
+    el('donut').innerHTML = out;
+  }
+
+  function render() {
+    if (!summary) return;
+    var sum = summary;
+    el('moLabel').textContent = moLabel(view);
+    el('mNext').disabled = view >= THIS_MONTH;
+    el('tapeMo').textContent = moLabel(view).toUpperCase();
+
+    var f = sliceRows(sum);
+    el('heroTotal').innerHTML = '<small>RM</small>' + rm0(sum.total);
+    el('heroTreat').innerHTML = sum.treatTotal > 0 ? 'incl. <b>RM ' + rm(sum.treatTotal) + '</b> treats' : '';
+    if (mode === 'split') {
+      var pc = sum.total ? Math.round(sum.subsTotal / sum.total * 100) : 0;
+      el('dCount').textContent = pc + '%';
+      el('dLbl').textContent = 'subscriptions';
+    } else {
+      el('dCount').textContent = f.rows.length;
+      el('dLbl').textContent = f.rows.length === 1 ? 'category' : 'categories';
+    }
+
+    drawDonut(f.rows, f.total);
+
+    el('cats').innerHTML = f.rows.length ? f.rows.map(function (c, i) {
+      var pct = f.total ? (c.amount / f.total * 100) : 0;
+      return '<div class="crow">' +
+        '<span class="sw" style="background:' + rowHue(c, i) + '"></span>' +
+        '<span class="cnm">' + c.category + '</span>' +
+        '<span class="cvl tnum">RM ' + rm(c.amount) + '<span class="cpc">' + pct.toFixed(0) + '%</span></span>' +
+        '</div>';
+    }).join('') : '<div class="empty">Nothing in ' + moLabel(view) + ' yet.</div>';
+
+    el('tape').innerHTML = sum.transactions.length ? sum.transactions.map(function (t) {
+      return '<div class="tline">' +
+        '<span class="td tnum">' + t.date.slice(8) + '</span>' +
+        '<span class="tc">' + t.category + '</span>' +
+        (t.treat ? '<span class="tt">treat</span>' : '') +
+        '<span class="lead"></span>' +
+        '<span class="ta tnum">' + rm(t.amount) + '</span>' +
+        '<button class="del" data-id="' + t.id + '" data-date="' + t.date + '" type="button" aria-label="delete">×</button></div>' +
+        (t.note ? '<div class="tnote">' + t.note + '</div>' : '');
+    }).join('') : '<div class="empty">No entries logged this month.</div>';
+    el('tapeTotal').textContent = 'RM ' + rm(sum.loggedTotal);
+
+    // subscriptions tab
+    var act = allSubs.filter(function (s) { return s.endMonth === null; });
+    var end = allSubs.filter(function (s) { return s.endMonth !== null; });
+    el('subTotal').innerHTML = '<small>RM</small>' + rm0(act.reduce(function (a, s) { return a + s.amount; }, 0)) + '<small>/mo</small>';
+    el('subCount').textContent = 'across ' + act.length + (act.length === 1 ? ' subscription' : ' subscriptions');
+    el('subList').innerHTML = act.map(function (s) {
+      return '<div class="srow"><div class="si"><div class="sn">' + s.name + '</div>' +
+        '<div class="sm">' + s.category + ' · since ' + moLabel(s.startMonth) + '</div></div>' +
+        '<span class="sa tnum">RM ' + rm(s.amount) + '</span>' +
+        '<button class="cancel" data-cancel="' + s.id + '" type="button">Cancel</button></div>';
+    }).join('');
+    el('endedWrap').style.display = end.length ? 'block' : 'none';
+    el('endedSum').textContent = 'Ended · ' + end.length;
+    el('endedList').innerHTML = end.map(function (s) {
+      return '<div class="srow"><div class="si"><div class="sn">' + s.name + '</div>' +
+        '<div class="sm">' + moLabel(s.startMonth) + ' – ' + moLabel(s.endMonth) + '</div></div>' +
+        '<span class="sa tnum">RM ' + rm(s.amount) + '</span></div>';
+    }).join('');
+
+    var chips = cats.slice(0, 8).map(function (c) {
+      return '<button type="button" data-c="' + c + '">' + c + '</button>';
+    }).join('');
+    el('catChips').innerHTML = chips;
+    el('sCatChips').innerHTML = chips;
+  }
+
+  // ---- interactions ----
+  el('mPrev').addEventListener('click', function () { load(addMonth(view, -1)); });
+  el('mNext').addEventListener('click', function () { if (view < THIS_MONTH) load(addMonth(view, 1)); });
+
+  el('mode').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    mode = b.dataset.m;
+    Array.prototype.forEach.call(el('mode').children, function (x) { x.classList.toggle('on', x === b); });
+    render();
+  });
+
+  el('tape').addEventListener('click', function (e) {
+    var b = e.target.closest('.del'); if (!b) return;
+    send({ op: 'delTxn', date: b.dataset.date, id: b.dataset.id });
+  });
+  el('subList').addEventListener('click', function (e) {
+    var b = e.target.closest('.cancel'); if (!b) return;
+    var s = allSubs.filter(function (x) { return x.id === b.dataset.cancel; })[0];
+    if (s && confirm('Cancel ' + s.name + '? ' + moLabel(THIS_MONTH) + ' still counts.')) {
+      send({ op: 'cancelSub', id: s.id });
+    }
+  });
+
+  function tab(which) {
+    el('vOverview').classList.toggle('on', which === 'o');
+    el('vSubs').classList.toggle('on', which === 's');
+    el('tabOverview').classList.toggle('on', which === 'o');
+    el('tabSubs').classList.toggle('on', which === 's');
+    scrollTo(0, 0);
+  }
+  el('tabOverview').addEventListener('click', function () { tab('o'); });
+  el('tabSubs').addEventListener('click', function () { tab('s'); });
+
+  // log sheet
+  el('fabLog').addEventListener('click', function () {
+    el('amt').value = ''; el('cat').value = ''; el('note').value = ''; el('date').value = TODAY;
+    treat = false; el('forMe').classList.add('on'); el('forThem').classList.remove('on');
+    el('catNew').textContent = '';
+    el('logSheet').classList.add('on'); el('amt').focus();
+  });
+  el('cxLog').addEventListener('click', function () { el('logSheet').classList.remove('on'); });
+  el('logSheet').addEventListener('click', function (e) { if (e.target === el('logSheet')) el('logSheet').classList.remove('on'); });
+  el('catChips').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    el('cat').value = b.dataset.c; el('catNew').textContent = '';
+  });
+  el('forMe').addEventListener('click', function () { treat = false; el('forMe').classList.add('on'); el('forThem').classList.remove('on'); });
+  el('forThem').addEventListener('click', function () { treat = true; el('forThem').classList.add('on'); el('forMe').classList.remove('on'); });
+  el('cat').addEventListener('input', function () {
+    var v = el('cat').value.trim();
+    var hit = cats.filter(function (c) { return c.toLowerCase() === v.toLowerCase(); })[0];
+    el('catNew').textContent = !v ? '' : hit
+      ? (hit !== v ? 'Will use your existing "' + hit + '".' : '')
+      : 'New category — "' + v + '" will be created.';
+  });
+  el('doLog').addEventListener('click', function () {
+    var sen = Math.round(parseFloat(el('amt').value) * 100);
+    var c = el('cat').value.trim();
+    if (!(sen > 0) || !c) { banner('Amount and category are both needed.'); return; }
+    el('logSheet').classList.remove('on');
+    send({ op: 'txn', amount: sen, category: c, treat: treat,
+           note: el('note').value.trim(), date: el('date').value || TODAY });
+  });
+
+  // subscription sheet
+  el('openSub').addEventListener('click', function () {
+    el('sName').value = ''; el('sAmt').value = ''; el('sCat').value = ''; el('sStart').value = THIS_MONTH;
+    el('subSheet').classList.add('on');
+  });
+  el('cxSub').addEventListener('click', function () { el('subSheet').classList.remove('on'); });
+  el('subSheet').addEventListener('click', function (e) { if (e.target === el('subSheet')) el('subSheet').classList.remove('on'); });
+  el('sCatChips').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return; el('sCat').value = b.dataset.c;
+  });
+  el('doSub').addEventListener('click', function () {
+    var sen = Math.round(parseFloat(el('sAmt').value) * 100);
+    var n = el('sName').value.trim(), c = el('sCat').value.trim();
+    if (!(sen > 0) || !n || !c) { banner('Name, amount and category are all needed.'); return; }
+    el('subSheet').classList.remove('on');
+    send({ op: 'sub', name: n, amount: sen, category: c, startMonth: el('sStart').value || THIS_MONTH });
+  });
+
+  el('themeToggle').addEventListener('click', function () {
+    var r = document.documentElement;
+    r.dataset.theme = r.dataset.theme === 'night' ? 'dawn' : 'night';
+    document.querySelector('meta[name=theme-color]').setAttribute('content',
+      r.dataset.theme === 'night' ? '#0d141c' : '#eef2f4');
+  });
+
+  function banner(msg) {
+    var b = el('banner');
+    if (!msg) { b.className = ''; return; }
+    b.textContent = msg; b.className = 'show';
+  }
+  function apply(state) {
+    TODAY = state.today;
+    THIS_MONTH = TODAY.slice(0, 7);
+    view = state.month;
+    summary = state.summary;
+    allSubs = state.subs || [];
+    cats = state.categories || [];
+    banner('');
+    render();
+  }
+  function load(month) {
+    if (!apiUrl) { banner('This page is live only on the shared link.'); return; }
+    fetch(apiUrl + '?poll=' + POLL + (month ? '&month=' + month : ''))
+      .then(function (r) { return r.json(); })
+      .then(apply)
+      .catch(function () { banner("Can't reach the tracker — reopen the shared link."); });
+  }
+  function send(payload) {
+    if (!apiUrl) { banner('This page is live only on the shared link.'); return; }
+    if (busy) return;
+    busy = true;
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(Object.assign({ poll: POLL }, payload)),
+    })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(apply)                    // the mutation response IS the fresh state
+      .catch(function () { banner("Couldn't save — nothing was changed. Try again."); })
+      .then(function () { busy = false; });
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(view); });
+  fetch('./config.json')
+    .then(function (r) { return r.json(); })
+    .then(function (cfg) { apiUrl = cfg.voteApiUrl; load(null); })
+    .catch(function () { banner('This page is live only on the shared link.'); });
+})();
+</script>
+</body>
+</html>
