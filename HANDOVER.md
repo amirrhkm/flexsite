@@ -61,7 +61,7 @@ docs/superpowers/plans/      implementation plans, one per feature
   "repTiers":  [["Stone",100],["Jetty",500],["Breakwater",1000],["Seawall",2500],["Bastion",5000]],
   "effortTiers": [["Ember",3],["Flame",10],["Blaze",25],["Furnace",60],["Inferno",150]] }
 ```
-- The **Lambda** imports it (`WORKOUT_TARGET`, `DAY_TIERS`, `WEEK_TIERS`, `REPS_PER_URGE`).
+- The **Lambda** imports it (`WORKOUT_TARGET`, `DAY_TIERS`, `WEEK_TIERS`).
 - The **CDK deploy** merges it into the served `config.json`.
 - The **page** reads `dayTiers`/`weekTiers`/`repTiers`/`repsPerUrge`/`effortTiers` from `config.json` at
   load (keeping its own arrays as fallback defaults). Change a number here → redeploy →
@@ -81,7 +81,8 @@ docs/superpowers/plans/      implementation plans, one per feature
   **10 push-ups** (`repsPerUrge`); you do them, adjust the count, tap Done — which banks one
   urge and the reps. **Seawall badges** (Stone…Bastion) at **reps-paid** milestones. The urge
   count is context, never a badge: a badge on urges logged would be a badge for having urges.
-  Days recorded before `urgeReps` existed are backfilled at 10 reps per urge on read.
+  Reps count from zero: only reps actually recorded count, never inferred from the urge
+  count, so days predating `urgeReps` contribute 0.
 - **Extra-effort flame badges** (Ember…Inferno): workout days beyond the weekly 3 accumulate
   into a lifetime `workout.extra` total that unlocks flame badges.
 - **Achievements tab:** one centered grid of every badge (streak tiers + Comeback + seawall +

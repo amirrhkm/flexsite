@@ -78,9 +78,7 @@ async function trackerDays(poll) {
     workout: it.workout === true,
     sober: it.sober === true,
     urges: normalizeUrges(it.urges),
-    // Left undefined when the attribute is absent, so computeSummary can tell a
-    // pre-feature day (backfill) from a real zero. Do NOT coerce this to 0.
-    urgeReps: it.urgeReps == null ? undefined : normalizeUrgeReps(it.urgeReps),
+    urgeReps: normalizeUrgeReps(it.urgeReps),
   })).sort((a, b) => a.date.localeCompare(b.date));
 }
 async function trackerState(poll) {

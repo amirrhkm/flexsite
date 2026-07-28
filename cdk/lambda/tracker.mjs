@@ -5,7 +5,6 @@ export const PRAYERS = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
 export const WORKOUT_TARGET = cfg.workoutTarget;
 export const DAY_TIERS = cfg.dayTiers;
 export const WEEK_TIERS = cfg.weekTiers;
-export const REPS_PER_URGE = cfg.repsPerUrge;
 
 export function todayInMYT(nowMs) {
   return new Date(nowMs + 8 * 3600 * 1000).toISOString().slice(0, 10);
@@ -82,11 +81,9 @@ export function computeSummary(days, today) {
     activeDates.add(d.date);
     const u = Number(d.urges) > 0 ? Math.floor(Number(d.urges)) : 0;
     urgesTotal += u;
-    // Days recorded before urgeReps existed are valued at the old fixed
-    // prescription. An explicit urgeReps (including 0) is never backfilled.
-    const r = d.urgeReps == null
-      ? u * REPS_PER_URGE
-      : (Number(d.urgeReps) > 0 ? Math.floor(Number(d.urgeReps)) : 0);
+    // Reps are only what was actually recorded — never inferred from the urge
+    // count. Days predating urgeReps therefore contribute 0.
+    const r = Number(d.urgeReps) > 0 ? Math.floor(Number(d.urgeReps)) : 0;
     repsTotal += r;
     if (d.date === today) { urgesToday = u; repsToday = r; }
     if (PRAYERS.every((p) => d.prayers && d.prayers[p] === true)) prayerOrd.add(dayNum(d.date));

@@ -141,8 +141,8 @@ test('computeSummary sums urges (today + all-time), missing = 0', () => {
     { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 4 },
   ];
   const s = computeSummary(days, '2026-07-21');
-  // No urgeReps on any day: each urge is backfilled at repsPerUrge (10).
-  assert.deepEqual(s.urges, { today: 4, total: 9, repsToday: 40, repsTotal: 90 });
+  // Reps are only ever what was actually recorded — a day with no urgeReps counts 0.
+  assert.deepEqual(s.urges, { today: 4, total: 9, repsToday: 0, repsTotal: 0 });
   assert.deepEqual(
     computeSummary([{ date: '2026-07-21', prayers: {}, workout: false, sober: false }], '2026-07-21').urges,
     { today: 0, total: 0, repsToday: 0, repsTotal: 0 },
@@ -160,21 +160,20 @@ test('computeSummary sums explicit urgeReps (today + all-time)', () => {
   assert.equal(s.urges.total, 5);
 });
 
-test('computeSummary backfills reps only for days with no urgeReps field', () => {
+test('computeSummary never infers reps from the urge count', () => {
   const days = [
-    // pre-feature day: no urgeReps -> 4 * 10 = 40
+    // pre-feature day: no urgeReps at all -> contributes 0, however many urges
     { date: '2026-07-19', prayers: {}, workout: false, sober: false, urges: 4 },
-    // post-feature day: explicit reps win over the urge count
+    // recorded reps count exactly as recorded
     { date: '2026-07-20', prayers: {}, workout: false, sober: false, urges: 1, urgeReps: 25 },
-    // explicit zero is NOT backfilled
     { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 1, urgeReps: 0 },
   ];
   const s = computeSummary(days, '2026-07-21');
-  assert.equal(s.urges.repsTotal, 65);
+  assert.equal(s.urges.repsTotal, 25);
   assert.equal(s.urges.repsToday, 0);
 });
 
-test('computeSummary coerces junk urgeReps to 0 without backfilling', () => {
+test('computeSummary coerces junk urgeReps to 0', () => {
   const days = [{ date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 2, urgeReps: -9 }];
   assert.equal(computeSummary(days, '2026-07-21').urges.repsTotal, 0);
 });

@@ -49,7 +49,7 @@ In `cdk/lambda/lockin-config.json`, replace `waveTiers` with:
 ```
 
 `repsPerUrge` serves two purposes: the prescription shown in the overlay, and the historical
-backfill constant (below). `repTiers` thresholds are total reps paid, all-time.
+the prescription shown in the overlay. `repTiers` thresholds are total reps paid, all-time.
 
 ## Badges: one family, not two
 
@@ -70,18 +70,23 @@ Bastion · 5,000 reps · across 412 urges
 Reps-per-urge is thereby legible without any new badge: an average climbing from 10 to 18
 over months is visible progress under the same pressure.
 
-### Thresholds preserve earned history
+### Thresholds
 
-Thresholds are 10× the retired wave tiers, so every crossing maps 1:1 to what the old design
-would have awarded. Combined with the backfill below, no badge already earned is lost.
+Thresholds are 10× the retired wave tiers — a sensible ramp at the default 10-rep
+prescription, not a mapping onto anything.
 
-| Badge | Reps paid | = urges at 10 | (retired tier) |
-|---|---|---|---|
-| Stone | 100 | 10 | Ripple |
-| Jetty | 500 | 50 | Swell |
-| Breakwater | 1,000 | 100 | Breaker |
-| Seawall | 2,500 | 250 | Tide |
-| Bastion | 5,000 | 500 | Ocean |
+| Badge | Reps paid | = urges at 10 |
+|---|---|---|
+| Stone | 100 | 10 |
+| Jetty | 500 | 50 |
+| Breakwater | 1,000 | 100 |
+| Seawall | 2,500 | 250 |
+| Bastion | 5,000 | 500 |
+
+**Reps start at zero.** An earlier version of this design backfilled pre-feature days at
+10 reps per logged urge to carry the retired wave badges forward. That was dropped by
+request: the seawall family is earned from scratch. Days predating `urgeReps` contribute 0,
+and any wave badge previously showing is simply gone.
 
 The family keeps the wave lineage inverted: the urge is still a wave, you are now what it
 breaks against. Art is cool stone-grey with a wave breaking at the base — distinct from both
@@ -110,16 +115,15 @@ Extend the urges block:
 urges: { today, total, repsToday, repsTotal }
 ```
 
-`urges`/`today`/`total` are unchanged. Reps for a day are read with a backfill fallback:
+`urges`/`today`/`total` are unchanged. Reps for a day are only ever what was recorded:
 
 ```js
-var dayReps = (d.urgeReps == null) ? (d.urges || 0) * REPS_PER_URGE : d.urgeReps;
+var dayReps = Number(d.urgeReps) > 0 ? Math.floor(Number(d.urgeReps)) : 0;
 ```
 
-Days recorded before this feature have `urges` but no `urgeReps`; they are valued at the old
-fixed prescription. This is a documented assumption, not a measurement — it keeps history
-coherent and preserves the 1:1 badge mapping above. `REPS_PER_URGE` comes from the config
-file, so it is the same constant the prescription uses.
+Nothing is inferred from the urge count, so a day with `urges` but no `urgeReps` contributes
+0. `repsPerUrge` in the config is therefore the **prescription only** — the page reads it for
+the overlay default; the Lambda does not need it.
 
 Badge tier is derived client-side from `repsTotal` against `repTiers`, mirroring how the wave
 and ring tiers already work.
@@ -154,7 +158,7 @@ existing mint mechanic.
 ## Files
 
 - `cdk/lambda/lockin-config.json` — `repsPerUrge`, `repTiers` (remove `waveTiers`)
-- `cdk/lambda/tracker.mjs` — `REPS_PER_URGE`, `repsToday`/`repsTotal` with backfill,
+- `cdk/lambda/tracker.mjs` — `repsToday`/`repsTotal`,
   `celebrationsFor` → `repBadges`
 - `cdk/lambda/index.mjs` — validate/store `urgeReps`
 - `plan/lockin.html` — overlay swap, `wallSvg`, `REP_TIERS`, card stat line, achievements
@@ -167,9 +171,9 @@ existing mint mechanic.
 
 **Unit (`tracker.test.mjs`):**
 - `repsTotal` sums `urgeReps` across days; `repsToday` picks today's.
-- Backfill: a day with `urges: 4` and no `urgeReps` contributes 40 at `repsPerUrge: 10`.
-- A day with `urgeReps: 0` and `urges: 1` contributes 0 — explicit zero is not backfilled.
-- Mixed old and new days sum correctly.
+- A day with `urges: 4` and no `urgeReps` contributes 0 — reps are never inferred from urges.
+- A day with `urgeReps: 0` and `urges: 1` contributes 0.
+- Mixed old and new days sum to the recorded reps only.
 
 **Unit (`index.test.mjs`):** `urgeReps` coerces non-integers, clamps negatives to 0 and
 oversize to 100000, defaults to 0 when absent.
