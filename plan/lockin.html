@@ -78,6 +78,8 @@
   .urgebtn:active{transform:scale(.97)}
   .urgestat{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:11px;color:var(--mut)}
   .urgecount b{font-family:'Fraunces',serif;color:var(--sea-ink2)}
+  .urgetogo{text-align:center;font-size:10.5px;color:var(--dim);margin-top:5px}
+  .urgetogo b{font-family:'Fraunces',serif;color:var(--sea-ink2)}
   .wavebadge svg{display:block}
   #ov{position:fixed;inset:0;background:#07101a;display:none;flex-direction:column;align-items:center;z-index:70;overflow:hidden}
   #ov.on{display:flex}
@@ -204,7 +206,8 @@
       <div class="dots" id="soberWeek"></div>
       <div class="urge">
         <button class="urgebtn" id="urgeBtn" type="button">Ride out an urge</button>
-        <div class="urgestat"><span class="wavebadge" id="waveBadge"></span><span class="urgecount"><b id="urToday">0</b> today · <b id="urAll">0</b> all-time</span></div>
+        <div class="urgestat"><span class="wavebadge" id="repBadge"></span><span class="urgecount"><b id="urReps">0</b> reps · <b id="urAll">0</b> urges</span></div>
+        <div class="urgetogo" id="urgeToGo"></div>
       </div>
     </div>
 
@@ -379,16 +382,24 @@
       diamond: ['#ffffff', '#c8f6fb', '#5fb6c4'], comeback: ['#ffd9a8', '#d9743f', '#8a3a1a'],
     };
     var svgSeq = 0;
-    var WAVE_TIERS = [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
+    var REP_TIERS = [['Stone', 100], ['Jetty', 500], ['Breakwater', 1000], ['Seawall', 2500], ['Bastion', 5000]];
+    var REPS_PER_URGE = 10;
     var EFFORT_TIERS = [['Ember', 3], ['Flame', 10], ['Blaze', 25], ['Furnace', 60], ['Inferno', 150]];
-    function waveBadgeSvg(size) {
-      var id = 'wv_' + (svgSeq++);
+    function wallSvg(size) {
+      var id = 'wl_' + (svgSeq++);
       return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 102 102">' +
-        '<defs><radialGradient id="' + id + '" cx="40%" cy="30%" r="72%"><stop offset="0%" stop-color="#bfe6ff"/>' +
-        '<stop offset="55%" stop-color="#3f7fca"/><stop offset="100%" stop-color="#1c3f76"/></radialGradient></defs>' +
+        '<defs><radialGradient id="' + id + '" cx="40%" cy="27%" r="76%">' +
+        '<stop offset="0%" stop-color="#e4edf4"/><stop offset="52%" stop-color="#5f7890"/>' +
+        '<stop offset="100%" stop-color="#1e2b37"/></radialGradient>' +
+        '<clipPath id="' + id + 'c"><circle cx="51" cy="51" r="42"/></clipPath></defs>' +
         '<circle cx="51" cy="51" r="42" fill="url(#' + id + ')"/>' +
-        '<path d="M20 58 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="4" stroke-linecap="round" opacity=".9"/>' +
-        '<path d="M20 48 q8 -12 16 0 t16 0 t16 0 t16 0" fill="none" stroke="#eaf6ff" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>';
+        '<g clip-path="url(#' + id + 'c)">' +
+        '<path d="M58 9 h13 v84 H58 z" fill="#f0f5fa" opacity=".95"/>' +
+        '<path d="M58 30 h13 M58 51 h13 M58 72 h13" stroke="#93a8bb" stroke-width="2.2" opacity=".65"/>' +
+        '<path d="M14 72 q4 -26 24 -26 q14 0 18 14 q-10 -6 -16 2 q-6 8 2 14 q-16 4 -28 -4 z" fill="#4b90d4" opacity=".92"/>' +
+        '<path d="M12 82 q12 -7 24 -1 t22 -1" fill="none" stroke="#bfdff7" stroke-width="3.6" stroke-linecap="round" opacity=".85"/>' +
+        '</g>' +
+        '<circle cx="51" cy="51" r="42" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="2"/></svg>';
     }
     function flameSvg(size) {
       var id = 'fl_' + (svgSeq++);
@@ -399,20 +410,20 @@
         '<path d="M51 22 C64 40 71 49 62 63 A16 16 0 1 1 40 63 C33 51 45 43 45 30 C49 34 49 39 52 41 C55 36 52 28 51 22 Z" fill="#ffe6a8"/>' +
         '<path d="M51 44 C58 51 60 56 55 63 A9 9 0 1 1 45 61 C45 54 49 50 51 44 Z" fill="#e8721f"/></svg>';
     }
-    function currentWaveBadge(total) {
+    function currentRepBadge(total) {
       var earned = null, next = null, i;
-      for (i = 0; i < WAVE_TIERS.length; i++) {
-        if (total >= WAVE_TIERS[i][1]) earned = WAVE_TIERS[i][0];
-        else { next = WAVE_TIERS[i]; break; }
+      for (i = 0; i < REP_TIERS.length; i++) {
+        if (total >= REP_TIERS[i][1]) earned = REP_TIERS[i][0];
+        else { next = REP_TIERS[i]; break; }
       }
       return { earned: earned, next: next, toGo: next ? next[1] - total : 0 };
     }
-    function mintWave(name) {
+    function mintRep(name) {
       buzz([20, 40, 40]);
       fireBurst(window.innerWidth / 2, window.innerHeight * 0.4, 22);
       if (reduceMotion) return;
       var t = document.createElement('div'); t.className = 'toast';
-      t.innerHTML = waveBadgeSvg(120) + '<div class="cap">' + name + '</div>';
+      t.innerHTML = wallSvg(120) + '<div class="cap">' + name + '</div>';
       document.body.appendChild(t);
       var a = t.animate([{ opacity: 0, transform: 'translate(-50%,-50%) scale(.4)' },
         { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .45 },
@@ -436,11 +447,15 @@
       a.onfinish = function () { t.remove(); };
     }
     function paintUrges(s) {
-      var total = (s.urges && s.urges.total) || 0, today = (s.urges && s.urges.today) || 0;
-      el('urToday').textContent = today;
-      el('urAll').textContent = total;
-      var b = currentWaveBadge(total);
-      el('waveBadge').innerHTML = b.earned ? waveBadgeSvg(30) : '';
+      var u = s.urges || {};
+      var reps = u.repsTotal || 0, urges = u.total || 0;
+      el('urReps').textContent = reps.toLocaleString();
+      el('urAll').textContent = urges.toLocaleString();
+      var b = currentRepBadge(reps);
+      el('repBadge').innerHTML = b.earned ? wallSvg(30) : '';
+      el('urgeToGo').innerHTML = b.next
+        ? '<b>' + b.toGo.toLocaleString() + '</b> reps to ' + b.next[0]
+        : 'Bastion — the last one.';
     }
     var OV_DUR = 60000, BR_IN = 4000, BR_OUT = 6000;
     var ovCv, ovCtx, ovW, ovH, ovRaf = null, ovT0 = 0;
@@ -583,9 +598,10 @@
       diamond: '365 days · 52 weeks',
       comeback: 'restart a streak after a slip',
     };
-    function acell(nm, art, ct, why) {
+    function acell(nm, art, ct, why, ctx) {
       var locked = ct === 0;
-      return '<div class="amed ' + (locked ? 'locked' : '') + '" data-nm="' + nm + '" data-ct="' + ct + '" data-why="' + why + '">' +
+      return '<div class="amed ' + (locked ? 'locked' : '') + '" data-nm="' + nm + '" data-ct="' + ct +
+        '" data-why="' + why + '"' + (ctx ? ' data-ctx="' + ctx + '"' : '') + '>' +
         art + '<span class="nm">' + nm + '</span><span class="ct">' + (locked ? '—' : '×' + ct) + '</span></div>';
     }
     function renderAchievements(s) {
@@ -594,9 +610,11 @@
       ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'].forEach(function (t) {
         cells += acell(TIER_CAP[t], medalSvg(t), s.medals[t] || 0, STREAK_WHY[t]);
       });
-      var total = (s.urges && s.urges.total) || 0;
-      WAVE_TIERS.forEach(function (w) {
-        cells += acell(w[0], waveBadgeSvg(46), total >= w[1] ? 1 : 0, w[1] + ' urges ridden');
+      var reps = (s.urges && s.urges.repsTotal) || 0;
+      var urgeCt = (s.urges && s.urges.total) || 0;
+      REP_TIERS.forEach(function (w) {
+        cells += acell(w[0], wallSvg(46), reps >= w[1] ? 1 : 0, w[1].toLocaleString() + ' reps paid',
+          reps.toLocaleString() + ' reps across ' + urgeCt.toLocaleString() + ' urges');
       });
       var extra = (s.workout && s.workout.extra) || 0;
       EFFORT_TIERS.forEach(function (w) {
@@ -732,7 +750,7 @@
       var ct = +c.dataset.ct, earned = ct > 0;
       el('explain').innerHTML = '<span class="exn">' + c.dataset.nm + '</span>' +
         '<span class="exr">' + c.dataset.why + '</span>' +
-        '<span class="exc">' + (earned ? 'Collected ×' + ct : 'Not yet collected') + '</span>';
+        '<span class="exc">' + (c.dataset.ctx ? c.dataset.ctx : (earned ? 'Collected ×' + ct : 'Not yet collected')) + '</span>';
     });
     function showTab(which) {
       el('trackView').classList.toggle('on', which === 'track');
@@ -760,7 +778,8 @@
         apiUrl = cfg.voteApiUrl;
         if (cfg.dayTiers) DAY_TIERS = cfg.dayTiers;
         if (cfg.weekTiers) WEEK_TIERS = cfg.weekTiers;
-        if (cfg.waveTiers) WAVE_TIERS = cfg.waveTiers;
+        if (cfg.repTiers) REP_TIERS = cfg.repTiers;
+        if (cfg.repsPerUrge) REPS_PER_URGE = cfg.repsPerUrge;
         if (cfg.effortTiers) EFFORT_TIERS = cfg.effortTiers;
         refresh();
       })
