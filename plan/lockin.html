@@ -81,20 +81,25 @@
   .urgetogo{text-align:center;font-size:10.5px;color:var(--dim);margin-top:5px}
   .urgetogo b{font-family:'Fraunces',serif;color:var(--sea-ink2)}
   .wavebadge svg{display:block}
-  #ov{position:fixed;inset:0;background:#07101a;display:none;flex-direction:column;align-items:center;z-index:70;overflow:hidden}
+  #ov{position:fixed;inset:0;background:#07101a;display:none;flex-direction:column;align-items:center;
+    justify-content:center;z-index:70;padding:28px}
+  :root[data-theme="dawn"] #ov{background:#f4ecdd}
   #ov.on{display:flex}
-  #ov canvas{position:absolute;inset:0;width:100%;height:100%}
-  .ovtop{position:relative;z-index:2;padding:calc(40px + env(safe-area-inset-top)) 22px 0;text-align:center;max-width:420px}
-  .ovtop .phase{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin-bottom:8px;color:#eaf2fb}
-  .ovtop .guide{font-size:14px;color:#bcd4ea;line-height:1.5}
-  .breath{position:relative;z-index:2;margin:auto;width:170px;height:170px;display:flex;align-items:center;justify-content:center}
-  .breath .bring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(120,190,240,.5);
-    background:radial-gradient(circle,rgba(87,166,216,.25),transparent 70%);transition:transform .2s linear}
-  .breath .word{font-size:15px;letter-spacing:.1em;color:#dbeeff;z-index:3}
-  .ovbtns{position:relative;z-index:2;padding:0 22px calc(38px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px}
-  .ovbtns button{border:none;border-radius:12px;padding:15px;font:600 15px/1 'Inter';cursor:pointer}
-  #okBtn{background:rgba(255,255,255,.10);color:#dbeeff;border:1px solid rgba(120,190,240,.3)}
-  #doneBtn{background:var(--gold);color:#0d141c;display:none}
+  .rx{font-family:'Fraunces',serif;font-weight:900;font-size:38px;color:var(--sea-ink);line-height:1;text-align:center}
+  .rxs{color:var(--mut);font-size:12px;margin-top:8px;text-align:center}
+  .stepper{display:flex;align-items:center;gap:18px;margin-top:34px}
+  .stepper button{width:56px;height:56px;border-radius:50%;border:1px solid var(--edge);background:var(--card);
+    color:var(--ink);font-size:25px;line-height:1;cursor:pointer;transition:transform .08s}
+  .stepper button:active{transform:scale(.94)}
+  .repnum{font-family:'Fraunces',serif;font-weight:900;font-size:56px;color:var(--gold);min-width:116px;
+    text-align:center;line-height:1}
+  .chips{display:flex;gap:8px;margin-top:20px}
+  .chips button{border:1px solid var(--edge);background:transparent;color:var(--mut);border-radius:999px;
+    padding:8px 15px;font:500 12px/1 'Inter';cursor:pointer}
+  .chips button.on{border-color:var(--sea);color:var(--sea-ink);background:var(--seabg)}
+  .ovline{color:var(--dim);font-size:11.5px;margin-top:26px;text-align:center}
+  #doneBtn{margin-top:22px;width:100%;max-width:300px;border:none;border-radius:12px;padding:15px;
+    font:600 15px/1 'Inter';cursor:pointer;background:var(--gold);color:#0d141c}
 
   .view{display:none}
   .view.on{display:block}
@@ -250,10 +255,16 @@
   </nav>
 
   <div id="ov" aria-hidden="true">
-    <canvas id="ovCanvas"></canvas>
-    <div class="ovtop"><div class="phase" id="ovPhase">Building</div><div class="guide" id="ovGuide">It rises and passes. Ride it.</div></div>
-    <div class="breath"><div class="bring" id="ovRing"></div><div class="word" id="ovWord">Breathe in</div></div>
-    <div class="ovbtns"><button id="okBtn" type="button">I'm okay now</button><button id="doneBtn" type="button">Done</button></div>
+    <div class="rx" id="rxTitle">10 push-ups</div>
+    <div class="rxs">Do them now. Then log what you did.</div>
+    <div class="stepper">
+      <button id="repMinus" type="button" aria-label="fewer reps">−</button>
+      <div class="repnum" id="repNum">10</div>
+      <button id="repPlus" type="button" aria-label="more reps">+</button>
+    </div>
+    <div class="chips" id="repChips"></div>
+    <div class="ovline">It came. You paid it. That is the record.</div>
+    <button id="doneBtn" type="button">Done</button>
   </div>
 
   <script>
@@ -457,46 +468,22 @@
         ? '<b>' + b.toGo.toLocaleString() + '</b> reps to ' + b.next[0]
         : 'Bastion — the last one.';
     }
-    var OV_DUR = 60000, BR_IN = 4000, BR_OUT = 6000;
-    var ovCv, ovCtx, ovW, ovH, ovRaf = null, ovT0 = 0;
-    function ovSize() { ovW = ovCv.width = innerWidth * devicePixelRatio; ovH = ovCv.height = innerHeight * devicePixelRatio; }
-    function ovFrame(now) {
-      var p = Math.min(1, (now - ovT0) / OV_DUR), env = Math.sin(p * Math.PI);
-      var amp = (12 + env * 78) * devicePixelRatio, base = ovH * (0.80 - env * 0.28);
-      ovCtx.clearRect(0, 0, ovW, ovH);
-      var grad = ovCtx.createLinearGradient(0, base - amp, 0, ovH);
-      grad.addColorStop(0, 'rgba(87,166,216,.55)'); grad.addColorStop(1, 'rgba(20,60,110,.85)');
-      for (var layer = 0; layer < 2; layer++) {
-        ovCtx.beginPath(); ovCtx.moveTo(0, ovH);
-        var ph = now * (0.0016 + layer * 0.0007) + layer * 2, la = amp * (layer ? 0.6 : 1);
-        for (var x = 0; x <= ovW; x += 8 * devicePixelRatio) ovCtx.lineTo(x, base - Math.sin(x / (120 * devicePixelRatio) + ph) * la);
-        ovCtx.lineTo(ovW, ovH); ovCtx.closePath();
-        ovCtx.fillStyle = layer ? 'rgba(47,128,184,.35)' : grad; ovCtx.fill();
-      }
-      var cyc = (now - ovT0) % (BR_IN + BR_OUT), inhale = cyc < BR_IN;
-      var k = inhale ? cyc / BR_IN : 1 - (cyc - BR_IN) / BR_OUT;
-      el('ovRing').style.transform = 'scale(' + (0.6 + 0.4 * k) + ')';
-      el('ovWord').textContent = inhale ? 'Breathe in' : 'Breathe out';
-      el('ovPhase').textContent = p < 0.4 ? 'Building' : p < 0.72 ? 'Cresting' : 'Passing';
-      if (p >= 1) { ovFinish(); return; }
-      ovRaf = requestAnimationFrame(ovFrame);
-    }
-    function ovFinish() {
-      if (ovRaf) cancelAnimationFrame(ovRaf); ovRaf = null;
-      el('ovPhase').textContent = 'It passed'; el('ovGuide').textContent = 'You rode it out.';
-      el('ovWord').textContent = ''; el('ovRing').style.transform = 'scale(.6)';
-      el('okBtn').style.display = 'none'; el('doneBtn').style.display = 'block';
-      if (ovCtx) ovCtx.clearRect(0, 0, ovW, ovH);
+    var REP_CHIPS = [10, 15, 20, 25];
+    var pendingReps = 10;
+    function setPendingReps(n) {
+      pendingReps = Math.max(1, Math.min(500, n));
+      el('repNum').textContent = pendingReps;
+      Array.prototype.forEach.call(el('repChips').children, function (b) {
+        b.classList.toggle('on', +b.dataset.n === pendingReps);
+      });
     }
     function ovOpen() {
-      if (!ovCv) { ovCv = el('ovCanvas'); ovCtx = ovCv.getContext('2d'); }
-      el('ov').classList.add('on'); el('ov').setAttribute('aria-hidden', 'false');
-      el('ovPhase').textContent = 'Building'; el('ovGuide').textContent = 'It rises and passes. Ride it.';
-      el('okBtn').style.display = 'block'; el('doneBtn').style.display = 'none';
-      ovSize(); ovT0 = performance.now(); ovRaf = requestAnimationFrame(ovFrame);
+      el('rxTitle').textContent = REPS_PER_URGE + ' push-ups';
+      setPendingReps(REPS_PER_URGE);
+      el('ov').classList.add('on');
+      el('ov').setAttribute('aria-hidden', 'false');
     }
-    function ovClose() { if (ovRaf) cancelAnimationFrame(ovRaf); ovRaf = null; el('ov').classList.remove('on'); el('ov').setAttribute('aria-hidden', 'true'); }
-    addEventListener('resize', function () { if (el('ov').classList.contains('on')) ovSize(); });
+    function ovClose() { el('ov').classList.remove('on'); el('ov').setAttribute('aria-hidden', 'true'); }
     var apiUrl = null;
     var el = function (id) { return document.getElementById(id); };
     var today = null;      // 'YYYY-MM-DD' from the server, set on first render
@@ -562,8 +549,8 @@
       el('today').textContent = new Date(today + 'T00:00:00+08:00').toLocaleDateString('en-GB',
         { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' });
       var todayItem = findDay(state.days, today);
-      todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober, urges: todayItem.urges || 0 }
-                           : { prayers: {}, workout: false, sober: false, urges: 0 };
+      todayRow = todayItem ? { prayers: Object.assign({}, todayItem.prayers), workout: todayItem.workout, sober: todayItem.sober, urges: todayItem.urges || 0, urgeReps: todayItem.urgeReps || 0 }
+                           : { prayers: {}, workout: false, sober: false, urges: 0, urgeReps: 0 };
 
       paintHabit('Prayers', s.prayers.current, DAY_TIERS, 'days');
       paintHabit('Sober', s.sober.current, DAY_TIERS, 'days');
@@ -701,7 +688,7 @@
       fetch(apiUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober, urges: todayRow.urges }),
+        body: JSON.stringify({ poll: POLL, date: today, prayers: todayRow.prayers, workout: todayRow.workout, sober: todayRow.sober, urges: todayRow.urges, urgeReps: todayRow.urgeReps }),
       })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function (newState) {
@@ -730,16 +717,25 @@
       save();
     });
 
-    el('urgeBtn').addEventListener('click', function () {
-      todayRow.urges = (todayRow.urges || 0) + 1;      // the choice to surf is the win — bank on tap
-      el('urToday').textContent = +el('urToday').textContent + 1;
-      el('urAll').textContent = +el('urAll').textContent + 1;
-      buzz(15);
-      save();                                          // POST includes urges; response re-renders + wave-badge mint
-      ovOpen();
+    el('repChips').innerHTML = REP_CHIPS.map(function (n) {
+      return '<button type="button" data-n="' + n + '">' + n + '</button>';
+    }).join('');
+    el('repChips').addEventListener('click', function (e) {
+      if (e.target.dataset && e.target.dataset.n) { setPendingReps(+e.target.dataset.n); buzz(10); }
     });
-    el('okBtn').addEventListener('click', ovClose);
-    el('doneBtn').addEventListener('click', ovClose);
+    el('repMinus').addEventListener('click', function () { setPendingReps(pendingReps - 1); });
+    el('repPlus').addEventListener('click', function () { setPendingReps(pendingReps + 1); });
+
+    // Tap opens the prescription; nothing is recorded until Done, so the count
+    // reflects the set actually done.
+    el('urgeBtn').addEventListener('click', function () { buzz(15); ovOpen(); });
+    el('doneBtn').addEventListener('click', function () {
+      ovClose();
+      todayRow.urges = (todayRow.urges || 0) + 1;
+      todayRow.urgeReps = (todayRow.urgeReps || 0) + pendingReps;
+      buzz(15);
+      save();      // POST carries both; the response re-renders and mints any rep badge
+    });
 
     var selMedal = null;
     el('awardsGrid').addEventListener('click', function (e) {
