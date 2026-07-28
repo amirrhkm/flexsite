@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { TRACKER_POLL, PRAYERS, computeSummary, todayInMYT, addDays } from './tracker.mjs';
 import { MOWARE_POLL, monthOf, computeMonth } from './moware.mjs';
 
@@ -111,6 +111,54 @@ async function trackerState(poll) {
   return { days, today, summary: computeSummary(days, today) };
 }
 
+const q = async (poll, prefix) => {
+  const { Items = [] } = await ddb.send(new QueryCommand({
+    TableName: TABLE,
+    KeyConditionExpression: '#p = :p AND begins_with(#v, :sk)',
+    ExpressionAttributeNames: { '#p': 'poll', '#v': 'voter' },
+    ExpressionAttributeValues: { ':p': poll, ':sk': prefix },
+  }));
+  return Items;
+};
+
+async function mowareCategories() {
+  const items = await q(MOWARE_POLL, 'meta#categories');
+  const set = items[0] && items[0].cats;
+  // A DynamoDB string set deserialises to a Set via the document client.
+  return set ? [...set].sort((a, b) => a.localeCompare(b)) : [];
+}
+
+async function mowareState(month) {
+  const [txnItems, subItems, categories] = await Promise.all([
+    q(MOWARE_POLL, 't#' + month),          // month-prefixed keys: one month only
+    q(MOWARE_POLL, 's#'),                  // subscriptions are not month-scoped
+    mowareCategories(),
+  ]);
+  const transactions = txnItems.map((it) => ({
+    id: it.voter.split('#')[2],
+    date: it.voter.split('#')[1],
+    amount: normalizeSen(it.amount),
+    category: it.category || '',
+    treat: it.treat === true,
+    note: it.note || '',
+  }));
+  const subs = subItems.map((it) => ({
+    id: it.voter.slice(2),
+    name: it.name || '',
+    amount: normalizeSen(it.amount),
+    category: it.category || '',
+    startMonth: it.startMonth,
+    endMonth: it.endMonth == null ? null : it.endMonth,
+  }));
+  return {
+    month,
+    today: todayInMYT(Date.now()),
+    categories,
+    subs,
+    summary: computeMonth(transactions, subs, month),
+  };
+}
+
 export const handler = async (event) => {
   const method = event.requestContext?.http?.method;
   try {
@@ -118,6 +166,14 @@ export const handler = async (event) => {
       const poll = clean(event.queryStringParameters?.poll, 60);
       if (!poll) return resp(400, { error: 'poll query param is required' });
       if (poll === TRACKER_POLL) return resp(200, await trackerState(poll));
+      if (poll === MOWARE_POLL) {
+        const asked = clean(event.queryStringParameters?.month, 7);
+        const month = asked || monthOf(todayInMYT(Date.now()));
+        if (!validMonth(month, Date.now())) {
+          return resp(400, { error: 'month must be YYYY-MM and not in the future' });
+        }
+        return resp(200, await mowareState(month));
+      }
       return resp(200, await state(poll));
     }
 
@@ -132,6 +188,93 @@ export const handler = async (event) => {
         return resp(400, { error: 'invalid JSON body' });
       }
       const poll = clean(body.poll, 60);
+      if (poll === MOWARE_POLL) {
+        const now = new Date().toISOString();
+        const nowMs = Date.now();
+        const thisMonth = monthOf(todayInMYT(nowMs));
+        const op = clean(body.op, 20);
+
+        if (op === 'txn') {
+          const amount = normalizeSen(body.amount);
+          if (amount < 1) return resp(400, { error: 'amount must be at least 1 sen' });
+          if (!validSpendDate(body.date, nowMs)) {
+            return resp(400, { error: 'date must be on or before today (MYT) and not before 2020-01-01' });
+          }
+          const category = resolveCategory(body.category, await mowareCategories());
+          if (!category) return resp(400, { error: 'category is required' });
+          const id = Math.random().toString(36).slice(2, 10);
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 't#' + body.date + '#' + id },
+            UpdateExpression: 'SET amount = :a, category = :c, treat = :t, note = :n, createdAt = if_not_exists(createdAt, :u)',
+            ExpressionAttributeValues: {
+              ':a': amount, ':c': category, ':t': body.treat === true,
+              ':n': normalizeNote(body.note), ':u': now,
+            },
+          }));
+          // Registry is a string set, so ADD is atomic and idempotent.
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 'meta#categories' },
+            UpdateExpression: 'ADD cats :c',
+            ExpressionAttributeValues: { ':c': new Set([category]) },
+          }));
+          return resp(200, await mowareState(monthOf(body.date)));
+        }
+
+        if (op === 'delTxn') {
+          const id = clean(body.id, 40);
+          if (!validSpendDate(body.date, nowMs) || !id) {
+            return resp(400, { error: 'date and id are required' });
+          }
+          await ddb.send(new DeleteCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 't#' + body.date + '#' + id },
+          }));
+          return resp(200, await mowareState(monthOf(body.date)));
+        }
+
+        if (op === 'sub') {
+          const amount = normalizeSen(body.amount);
+          const name = clean(body.name, 40);
+          if (amount < 1 || !name) return resp(400, { error: 'name and amount are required' });
+          const category = resolveCategory(body.category, await mowareCategories());
+          if (!category) return resp(400, { error: 'category is required' });
+          const startMonth = validMonth(body.startMonth, nowMs) ? body.startMonth : thisMonth;
+          const id = Math.random().toString(36).slice(2, 10);
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 's#' + id },
+            UpdateExpression: 'SET #nm = :n, amount = :a, category = :c, startMonth = :s, endMonth = :e, createdAt = if_not_exists(createdAt, :u)',
+            ExpressionAttributeNames: { '#nm': 'name' },
+            ExpressionAttributeValues: {
+              ':n': name, ':a': amount, ':c': category, ':s': startMonth, ':e': null, ':u': now,
+            },
+          }));
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 'meta#categories' },
+            UpdateExpression: 'ADD cats :c',
+            ExpressionAttributeValues: { ':c': new Set([category]) },
+          }));
+          return resp(200, await mowareState(thisMonth));
+        }
+
+        if (op === 'cancelSub') {
+          const id = clean(body.id, 40);
+          if (!id) return resp(400, { error: 'id is required' });
+          // endMonth is the CURRENT month, inclusive — it was already billed.
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE,
+            Key: { poll, voter: 's#' + id },
+            UpdateExpression: 'SET endMonth = :e',
+            ExpressionAttributeValues: { ':e': thisMonth },
+          }));
+          return resp(200, await mowareState(thisMonth));
+        }
+
+        return resp(400, { error: 'unknown op' });
+      }
       if (poll === TRACKER_POLL) {
         if (!validTrackerDate(body.date, Date.now())) {
           return resp(400, { error: 'date must be today or yesterday (MYT)' });
