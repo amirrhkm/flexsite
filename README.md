@@ -55,8 +55,9 @@ Full detail: **[cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md)**.
 
 - **`plan/gokart-proposal.html`** — a friends' go-kart date/track poll (the original use case).
 - **`plan/lockin.html`** — *Lock In*, a private habit tracker built on the same backend:
-  prayer / sober / workout streaks with progress rings and medals, an urge-surfing tool
-  with wave badges, extra-effort flame badges, an Achievements tab, and per-habit history
+  prayer / sober / workout streaks with progress rings and medals, an urge tool that
+  prescribes push-ups and banks the reps toward seawall badges, extra-effort flame badges,
+  an Achievements tab, and per-habit history
   calendars — all event-based, all on the free tier.
 - **`cdk/`** — the stack (`lib/site-stack.ts`), the single Lambda (`lambda/index.mjs` +
   the pure, unit-tested `lambda/tracker.mjs`), and the shared rule config

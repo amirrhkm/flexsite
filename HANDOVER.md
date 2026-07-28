@@ -46,7 +46,7 @@ docs/superpowers/plans/      implementation plans, one per feature
   prayers/sober: { current, best, thisWeek[7], forging }
   workout:       { current, best, thisWeekSessions, target, forging, extra }
   medals:        { bronze, silver, gold, sapphire, diamond, comeback }   // pooled counts
-  urges:         { today, total }
+  urges:         { today, total, repsToday, repsTotal }
   totals:        { medals, bestStreak, daysTracked }
   ```
 
@@ -57,12 +57,13 @@ docs/superpowers/plans/      implementation plans, one per feature
 { "workoutTarget": 3,
   "dayTiers":  [["bronze",7],["silver",30],["gold",90],["sapphire",180],["diamond",365]],
   "weekTiers": [["bronze",4],["silver",12],["gold",26],["sapphire",39],["diamond",52]],
-  "waveTiers": [["Ripple",10],["Swell",50],["Breaker",100],["Tide",250],["Ocean",500]],
+  "repsPerUrge": 10,
+  "repTiers":  [["Stone",100],["Jetty",500],["Breakwater",1000],["Seawall",2500],["Bastion",5000]],
   "effortTiers": [["Ember",3],["Flame",10],["Blaze",25],["Furnace",60],["Inferno",150]] }
 ```
-- The **Lambda** imports it (`WORKOUT_TARGET`, `DAY_TIERS`, `WEEK_TIERS`).
+- The **Lambda** imports it (`WORKOUT_TARGET`, `DAY_TIERS`, `WEEK_TIERS`, `REPS_PER_URGE`).
 - The **CDK deploy** merges it into the served `config.json`.
-- The **page** reads `dayTiers`/`weekTiers`/`waveTiers`/`effortTiers` from `config.json` at
+- The **page** reads `dayTiers`/`weekTiers`/`repTiers`/`repsPerUrge`/`effortTiers` from `config.json` at
   load (keeping its own arrays as fallback defaults). Change a number here → redeploy →
   backend + page both update.
 
@@ -76,18 +77,20 @@ docs/superpowers/plans/      implementation plans, one per feature
   progress, center-screen **medal mint** on crossing a tier, "Locked in for today" on
   completing all prayers+sober. An always-on **CSS tap pulse** (card glow + number bump)
   guarantees visible feedback regardless of reduce-motion.
-- **Urge surfing:** "Ride out an urge" on the Sober card → a guided **wave overlay** (swell/
-  crest/recede + breath cue), banks a "wave ridden" on tap; **wave badges** (Ripple…Ocean)
-  at urge-total milestones.
+- **Urge reps:** "Ride out an urge" on the Sober card → an overlay prescribing
+  **10 push-ups** (`repsPerUrge`); you do them, adjust the count, tap Done — which banks one
+  urge and the reps. **Seawall badges** (Stone…Bastion) at **reps-paid** milestones. The urge
+  count is context, never a badge: a badge on urges logged would be a badge for having urges.
+  Days recorded before `urgeReps` existed are backfilled at 10 reps per urge on read.
 - **Extra-effort flame badges** (Ember…Inferno): workout days beyond the weekly 3 accumulate
   into a lifetime `workout.extra` total that unlocks flame badges.
-- **Achievements tab:** one centered grid of every badge (streak tiers + Comeback + wave +
+- **Achievements tab:** one centered grid of every badge (streak tiers + Comeback + seawall +
   flame) with ×counts; locked ones show the real art **blurred/dim**; tap → a single
   explainer line (name / requirement / collected).
 - **History calendar:** tap a habit's ring → month grid, page back through months, filled =
   it counted that day. Client-side over `state.days`.
 - **Themes:** Night & Gold (default) + Dawn light toggle (persisted). Type: Fraunces + Inter.
-- **`celebrationsFor(prev, next, waveTiers, effortTiers)`** — pure, decides what to
+- **`celebrationsFor(prev, next, repTiers, effortTiers)`** — pure, decides what to
   celebrate by diffing render states; sentinel-bracketed (`/*__CELEB_START__*/…`) and
   extraction-tested in `reward.test.mjs`.
 
@@ -106,7 +109,7 @@ docs/superpowers/plans/      implementation plans, one per feature
 - **Single self-contained HTML file.** `BucketDeployment` only syncs `*.html`, so no sibling
   `.js`/`.css` — everything inline in `plan/lockin.html`.
 - **DOM order matters:** any element the page's IIFE wires at load must appear **before** the
-  `<script>`. Putting the wave overlay *after* the script once made `el('okBtn')` null →
+  `<script>`. Putting an overlay *after* the script once made a wired `el(...)` lookup null →
   threw → broke the whole page. Overlays/modals/tab bar all sit before `<script>`.
 - **Reduce-motion:** `fireBurst`/`mint`/`countUp`/overlay flourish are gated on
   `prefers-reduced-motion`; the CSS tap pulse is intentionally **not** gated so feedback
@@ -115,7 +118,8 @@ docs/superpowers/plans/      implementation plans, one per feature
   revert path. `celebrationsFor(null, …)` returns empty.
 - **`state.today` (server, MYT) is the only source of "today"** — never the browser clock.
 - **No emoji, spare copy** (user preference). Colours: green = done, gold = reward, calming
-  blue for the urge wave, warm flame for effort badges; **no punishing red**.
+  blue for the urge block, stone-grey for seawall badges, warm flame for effort badges;
+  **no punishing red**.
 - **Medal SVG gradient ids must be unique** (`svgSeq`) — many render at once in the grid.
 - **No browser in the dev environment** (Chrome extension declined). Verify with
   `node --check` on the extracted script + `tidy` + structural greps + occasional jsdom logic
