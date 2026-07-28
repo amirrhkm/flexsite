@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { TRACKER_POLL, PRAYERS, computeSummary, todayInMYT, addDays } from './tracker.mjs';
+import { MOWARE_POLL, monthOf, computeMonth } from './moware.mjs';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE = process.env.TABLE_NAME;
@@ -64,6 +65,29 @@ export function normalizeUrgeReps(v) {
   const n = Math.floor(Number(v));
   if (!Number.isFinite(n) || n < 0) return 0;
   return Math.min(n, 100000);
+}
+export function normalizeSen(v) {
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(n, 100000000);           // RM 1,000,000 ceiling
+}
+export function validSpendDate(date, nowMs) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  return date >= '2020-01-01' && date <= todayInMYT(nowMs);
+}
+export function validMonth(month, nowMs) {
+  if (typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) return false;
+  return month <= monthOf(todayInMYT(nowMs));
+}
+// Typing "food" when "Food" exists must not split the category in two.
+export function resolveCategory(input, known) {
+  const raw = clean(input, 40);
+  if (!raw) return '';
+  const hit = (known || []).find((k) => String(k).toLowerCase() === raw.toLowerCase());
+  return hit || raw;
+}
+export function normalizeNote(v) {
+  return clean(v, 80);
 }
 async function trackerDays(poll) {
   const { Items = [] } = await ddb.send(new QueryCommand({

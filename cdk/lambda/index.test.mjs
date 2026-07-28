@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validTrackerDate, normalizePrayers, normalizeUrges, normalizeUrgeReps } from './index.mjs';
+import { validTrackerDate, normalizePrayers, normalizeUrges, normalizeUrgeReps,
+         normalizeSen, validSpendDate, validMonth, resolveCategory, normalizeNote } from './index.mjs';
 
 test('validTrackerDate accepts today and yesterday (MYT), rejects others', () => {
   const now = Date.parse('2026-07-21T05:00:00Z'); // 13:00 MYT on 2026-07-21
@@ -35,4 +36,58 @@ test('normalizeUrgeReps coerces to a clamped non-negative integer', () => {
   assert.equal(normalizeUrgeReps(undefined), 0);
   assert.equal(normalizeUrgeReps('x'), 0);
   assert.equal(normalizeUrgeReps(0), 0);
+});
+
+test('normalizeSen coerces to a clamped non-negative integer', () => {
+  assert.equal(normalizeSen('1290'), 1290);
+  assert.equal(normalizeSen(1290.7), 1290);
+  assert.equal(normalizeSen(-5), 0);
+  assert.equal(normalizeSen(0), 0);
+  assert.equal(normalizeSen(999999999999), 100000000);
+  assert.equal(normalizeSen(undefined), 0);
+  assert.equal(normalizeSen('x'), 0);
+});
+
+test('validSpendDate accepts today and the past, rejects the future and pre-2020', () => {
+  const now = Date.parse('2026-07-29T05:00:00Z'); // 13:00 MYT on 2026-07-29
+  assert.equal(validSpendDate('2026-07-29', now), true);   // today
+  assert.equal(validSpendDate('2026-07-01', now), true);
+  assert.equal(validSpendDate('2020-01-01', now), true);   // floor is inclusive
+  assert.equal(validSpendDate('2019-12-31', now), false);  // typo floor
+  assert.equal(validSpendDate('2026-07-30', now), false);  // future
+  assert.equal(validSpendDate('garbage', now), false);
+  assert.equal(validSpendDate(undefined, now), false);
+});
+
+test('validMonth accepts this month and earlier, rejects the future and junk', () => {
+  const now = Date.parse('2026-07-29T05:00:00Z');
+  assert.equal(validMonth('2026-07', now), true);
+  assert.equal(validMonth('2026-06', now), true);
+  assert.equal(validMonth('2026-08', now), false);
+  assert.equal(validMonth('2026-7', now), false);
+  assert.equal(validMonth('garbage', now), false);
+});
+
+test('resolveCategory reuses an existing spelling regardless of case', () => {
+  const known = ['Food', 'Petrol', 'Sports'];
+  assert.equal(resolveCategory('food', known), 'Food');
+  assert.equal(resolveCategory('  PETROL ', known), 'Petrol');
+  assert.equal(resolveCategory('Food', known), 'Food');
+  assert.equal(resolveCategory('Bowling', known), 'Bowling');   // genuinely new
+  assert.equal(resolveCategory('  Bowling  ', known), 'Bowling');
+  assert.equal(resolveCategory('food', []), 'food');
+  assert.equal(resolveCategory('food', undefined), 'food');
+});
+
+test('resolveCategory caps length at 40 and returns empty for junk', () => {
+  assert.equal(resolveCategory('x'.repeat(60), []).length, 40);
+  assert.equal(resolveCategory('   ', []), '');
+  assert.equal(resolveCategory(undefined, []), '');
+});
+
+test('normalizeNote trims, caps at 80, and empties when absent', () => {
+  assert.equal(normalizeNote('  pickleball court '), 'pickleball court');
+  assert.equal(normalizeNote('n'.repeat(200)).length, 80);
+  assert.equal(normalizeNote(undefined), '');
+  assert.equal(normalizeNote(42), '');
 });
