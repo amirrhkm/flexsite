@@ -124,7 +124,11 @@ beside them are exact, and that is the honest trade rather than fudging a slice.
 
 ## API — one `moware` branch in `index.mjs`
 
-`GET ?poll=moware&month=YYYY-MM` → `{ month, today, categories, summary }`
+`GET ?poll=moware&month=YYYY-MM` → `{ month, today, categories, subs, summary }`
+
+`subs` is **every** subscription record including ended ones — the Subscriptions tab needs them
+to show the collapsed history. `summary.subscriptions` is the subset active in the viewed month,
+which is what the chart and totals use. The two are deliberately different.
 
 `month` defaults to the current MYT month, must match `^\d{4}-\d{2}$`, and is **rejected if in
 the future**. `today` is server-computed MYT — the page never uses the browser clock, same as
