@@ -362,14 +362,14 @@
       a.onfinish = function () { t.remove(); };
     }
     function runCelebrations(prev, next) {
-      var c = celebrationsFor(prev, next, WAVE_TIERS, EFFORT_TIERS);
+      var c = celebrationsFor(prev, next, REP_TIERS, EFFORT_TIERS);
       c.countUp.forEach(function (h) {
         var cap = h.charAt(0).toUpperCase() + h.slice(1);
         countUp(el('num' + cap), prev.summary[h].current, next.summary[h].current);
       });
       c.mints.forEach(function (tier, i) { setTimeout(function () { mint(tier); }, i * 320); });
-      c.waveBadges.forEach(function (name, i) { setTimeout(function () { mintWave(name); }, (c.mints.length + i) * 320); });
-      c.effortBadges.forEach(function (name, i) { setTimeout(function () { mintEffort(name); }, (c.mints.length + c.waveBadges.length + i) * 320); });
+      c.repBadges.forEach(function (name, i) { setTimeout(function () { mintRep(name); }, (c.mints.length + i) * 320); });
+      c.effortBadges.forEach(function (name, i) { setTimeout(function () { mintEffort(name); }, (c.mints.length + c.repBadges.length + i) * 320); });
       if (c.dailyComplete) setTimeout(celebrateDaily, c.mints.length ? 400 : 0);
     }
 
@@ -489,10 +489,10 @@
     var lastState = null;  // last server-confirmed state, for reverting failed optimistic writes
 
     /*__CELEB_START__*/
-    function celebrationsFor(prev, next, waveTiers, effortTiers) {
+    function celebrationsFor(prev, next, repTiers, effortTiers) {
       var PR = ['subuh', 'zohor', 'asar', 'maghrib', 'isya'];
       var TIERS = ['bronze', 'silver', 'gold', 'sapphire', 'diamond', 'comeback'];
-      var out = { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] };
+      var out = { countUp: [], mints: [], dailyComplete: false, repBadges: [], effortBadges: [] };
       if (!prev) return out;
       ['prayers', 'sober', 'workout'].forEach(function (h) {
         if (next.summary[h].current > prev.summary[h].current) out.countUp.push(h);
@@ -507,10 +507,11 @@
         return PR.every(function (p) { return d.prayers && d.prayers[p] === true; }) && d.sober === true;
       };
       if (complete(next) && !complete(prev)) out.dailyComplete = true;
-      var WAVE = waveTiers || [['Ripple', 10], ['Swell', 50], ['Breaker', 100], ['Tide', 250], ['Ocean', 500]];
-      var pt = (prev.summary.urges && prev.summary.urges.total) || 0;
-      var nt = (next.summary.urges && next.summary.urges.total) || 0;
-      WAVE.forEach(function (w) { if (pt < w[1] && nt >= w[1]) out.waveBadges.push(w[0]); });
+      // Badges track reps paid, never the urge count.
+      var REPS = repTiers || [['Stone', 100], ['Jetty', 500], ['Breakwater', 1000], ['Seawall', 2500], ['Bastion', 5000]];
+      var pr = (prev.summary.urges && prev.summary.urges.repsTotal) || 0;
+      var nr = (next.summary.urges && next.summary.urges.repsTotal) || 0;
+      REPS.forEach(function (w) { if (pr < w[1] && nr >= w[1]) out.repBadges.push(w[0]); });
       var EFFORT = effortTiers || [['Ember', 3], ['Flame', 10], ['Blaze', 25], ['Furnace', 60], ['Inferno', 150]];
       var pe = (prev.summary.workout && prev.summary.workout.extra) || 0;
       var ne = (next.summary.workout && next.summary.workout.extra) || 0;

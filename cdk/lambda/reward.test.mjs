@@ -16,14 +16,14 @@ function state(over) {
     summary: {
       prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2 },
       medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
-      urges: { today: 0, total: 0 },
+      urges: { today: 0, total: 0, repsToday: 0, repsTotal: 0 },
     },
   }, over);
 }
 
 test('first load (prev null) celebrates nothing', () => {
   const r = celebrationsFor(null, state());
-  assert.deepEqual(r, { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
+  assert.deepEqual(r, { countUp: [], mints: [], dailyComplete: false, repBadges: [], effortBadges: [] });
 });
 
 test('a streak increase is a count-up for that habit only', () => {
@@ -44,10 +44,10 @@ test('a pooled medal increase mints that tier', () => {
 });
 
 test('no change and decreases celebrate nothing', () => {
-  assert.deepEqual(celebrationsFor(state(), state()), { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
+  assert.deepEqual(celebrationsFor(state(), state()), { countUp: [], mints: [], dailyComplete: false, repBadges: [], effortBadges: [] });
   const lower = state({ summary: { prayers: { current: 9 }, sober: { current: 10 }, workout: { current: 2 },
     medals: { bronze: 0, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 } } });
-  assert.deepEqual(celebrationsFor(state(), lower), { countUp: [], mints: [], dailyComplete: false, waveBadges: [], effortBadges: [] });
+  assert.deepEqual(celebrationsFor(state(), lower), { countUp: [], mints: [], dailyComplete: false, repBadges: [], effortBadges: [] });
 });
 
 test('dailyComplete fires once when today becomes all-5-prayers + sober', () => {
@@ -58,32 +58,44 @@ test('dailyComplete fires once when today becomes all-5-prayers + sober', () => 
   assert.equal(celebrationsFor(after, after).dailyComplete, false);
 });
 
-test('celebrationsFor flags a wave badge when total crosses a threshold', () => {
-  const withUrges = (total) => state({ summary: {
+test('celebrationsFor flags a rep badge when reps total crosses a threshold', () => {
+  const withReps = (repsTotal) => state({ summary: {
     prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2 },
     medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
-    urges: { today: 1, total },
+    urges: { today: 1, total: 1, repsToday: 10, repsTotal },
   } });
-  assert.deepEqual(celebrationsFor(withUrges(9), withUrges(10)).waveBadges, ['Ripple']);
-  assert.deepEqual(celebrationsFor(withUrges(49), withUrges(51)).waveBadges, ['Swell']);
-  assert.deepEqual(celebrationsFor(withUrges(11), withUrges(12)).waveBadges, []);
-  assert.deepEqual(celebrationsFor(null, withUrges(10)).waveBadges, []);
+  assert.deepEqual(celebrationsFor(withReps(95), withReps(105)).repBadges, ['Stone']);
+  assert.deepEqual(celebrationsFor(withReps(499), withReps(512)).repBadges, ['Jetty']);
+  // one entry per threshold crossed, even if a single set clears two
+  assert.deepEqual(celebrationsFor(withReps(90), withReps(600)).repBadges, ['Stone', 'Jetty']);
+  assert.deepEqual(celebrationsFor(withReps(120), withReps(130)).repBadges, []);
+  assert.deepEqual(celebrationsFor(null, withReps(105)).repBadges, []);
 });
 
-test('celebrationsFor uses the passed wave tiers', () => {
-  var s = function (total) { return state({ summary: {
+test('celebrationsFor uses the passed rep tiers', () => {
+  var s = function (repsTotal) { return state({ summary: {
     prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2 },
     medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
-    urges: { today: 1, total: total },
+    urges: { today: 1, total: 1, repsToday: 3, repsTotal: repsTotal },
   } }); };
-  assert.deepEqual(celebrationsFor(s(2), s(3), [['Tiny', 3]]).waveBadges, ['Tiny']);
+  assert.deepEqual(celebrationsFor(s(2), s(3), [['Tiny', 3]]).repBadges, ['Tiny']);
+});
+
+test('celebrationsFor ignores the urge count — only reps earn badges', () => {
+  var s = function (total, repsTotal) { return state({ summary: {
+    prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2 },
+    medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
+    urges: { today: 1, total: total, repsToday: 0, repsTotal: repsTotal },
+  } }); };
+  // urge count leaps past every old wave threshold; reps do not move
+  assert.deepEqual(celebrationsFor(s(9, 50), s(600, 50)).repBadges, []);
 });
 
 test('celebrationsFor flags an effort badge when extra crosses a threshold', () => {
   var s = function (extra) { return state({ summary: {
     prayers: { current: 10 }, sober: { current: 10 }, workout: { current: 2, extra: extra },
     medals: { bronze: 1, silver: 0, gold: 0, sapphire: 0, diamond: 0, comeback: 0 },
-    urges: { today: 0, total: 0 },
+    urges: { today: 0, total: 0, repsToday: 0, repsTotal: 0 },
   } }); };
   assert.deepEqual(celebrationsFor(s(2), s(3)).effortBadges, ['Ember']);
   assert.deepEqual(celebrationsFor(s(3), s(4)).effortBadges, []);
