@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validTrackerDate, normalizePrayers, normalizeUrges } from './index.mjs';
+import { validTrackerDate, normalizePrayers, normalizeUrges, normalizeUrgeReps } from './index.mjs';
 
 test('validTrackerDate accepts today and yesterday (MYT), rejects others', () => {
   const now = Date.parse('2026-07-21T05:00:00Z'); // 13:00 MYT on 2026-07-21
@@ -25,4 +25,14 @@ test('normalizeUrges coerces to a clamped non-negative integer', () => {
   assert.equal(normalizeUrges(99999), 1000);
   assert.equal(normalizeUrges(undefined), 0);
   assert.equal(normalizeUrges('x'), 0);
+});
+
+test('normalizeUrgeReps coerces to a clamped non-negative integer', () => {
+  assert.equal(normalizeUrgeReps('15'), 15);
+  assert.equal(normalizeUrgeReps(12.7), 12);
+  assert.equal(normalizeUrgeReps(-4), 0);
+  assert.equal(normalizeUrgeReps(999999), 100000);
+  assert.equal(normalizeUrgeReps(undefined), 0);
+  assert.equal(normalizeUrgeReps('x'), 0);
+  assert.equal(normalizeUrgeReps(0), 0);
 });
