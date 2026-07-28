@@ -141,9 +141,51 @@ test('computeSummary sums urges (today + all-time), missing = 0', () => {
     { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 4 },
   ];
   const s = computeSummary(days, '2026-07-21');
-  assert.deepEqual(s.urges, { today: 4, total: 9 });
+  // No urgeReps on any day: each urge is backfilled at repsPerUrge (10).
+  assert.deepEqual(s.urges, { today: 4, total: 9, repsToday: 40, repsTotal: 90 });
   assert.deepEqual(
     computeSummary([{ date: '2026-07-21', prayers: {}, workout: false, sober: false }], '2026-07-21').urges,
-    { today: 0, total: 0 },
+    { today: 0, total: 0, repsToday: 0, repsTotal: 0 },
   );
+});
+
+test('computeSummary sums explicit urgeReps (today + all-time)', () => {
+  const days = [
+    { date: '2026-07-20', prayers: {}, workout: false, sober: false, urges: 2, urgeReps: 35 },
+    { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 3, urgeReps: 48 },
+  ];
+  const s = computeSummary(days, '2026-07-21');
+  assert.equal(s.urges.repsToday, 48);
+  assert.equal(s.urges.repsTotal, 83);
+  assert.equal(s.urges.total, 5);
+});
+
+test('computeSummary backfills reps only for days with no urgeReps field', () => {
+  const days = [
+    // pre-feature day: no urgeReps -> 4 * 10 = 40
+    { date: '2026-07-19', prayers: {}, workout: false, sober: false, urges: 4 },
+    // post-feature day: explicit reps win over the urge count
+    { date: '2026-07-20', prayers: {}, workout: false, sober: false, urges: 1, urgeReps: 25 },
+    // explicit zero is NOT backfilled
+    { date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 1, urgeReps: 0 },
+  ];
+  const s = computeSummary(days, '2026-07-21');
+  assert.equal(s.urges.repsTotal, 65);
+  assert.equal(s.urges.repsToday, 0);
+});
+
+test('computeSummary coerces junk urgeReps to 0 without backfilling', () => {
+  const days = [{ date: '2026-07-21', prayers: {}, workout: false, sober: false, urges: 2, urgeReps: -9 }];
+  assert.equal(computeSummary(days, '2026-07-21').urges.repsTotal, 0);
+});
+
+test('urge reps do not touch streaks, medals or workout.extra', () => {
+  const base = { prayers: { subuh: true, zohor: true, asar: true, maghrib: true, isya: true }, workout: false, sober: true };
+  const withReps = [{ date: '2026-07-21', ...base, urges: 9, urgeReps: 900 }];
+  const without = [{ date: '2026-07-21', ...base }];
+  const a = computeSummary(withReps, '2026-07-21');
+  const b = computeSummary(without, '2026-07-21');
+  assert.equal(a.sober.current, b.sober.current);
+  assert.deepEqual(a.medals, b.medals);
+  assert.equal(a.workout.extra, b.workout.extra);
 });

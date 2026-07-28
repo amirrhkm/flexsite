@@ -2,6 +2,7 @@
   "workoutTarget": 3,
   "dayTiers": [["bronze", 7], ["silver", 30], ["gold", 90], ["sapphire", 180], ["diamond", 365]],
   "weekTiers": [["bronze", 4], ["silver", 12], ["gold", 26], ["sapphire", 39], ["diamond", 52]],
-  "waveTiers": [["Ripple", 10], ["Swell", 50], ["Breaker", 100], ["Tide", 250], ["Ocean", 500]],
+  "repsPerUrge": 10,
+  "repTiers": [["Stone", 100], ["Jetty", 500], ["Breakwater", 1000], ["Seawall", 2500], ["Bastion", 5000]],
   "effortTiers": [["Ember", 3], ["Flame", 10], ["Blaze", 25], ["Furnace", 60], ["Inferno", 150]]
 }

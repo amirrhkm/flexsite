@@ -59,7 +59,7 @@ export class SiteStack extends cdk.Stack {
       },
     });
 
-    // Single source of truth for rule numbers (workout target, streak/wave tiers),
+    // Single source of truth for rule numbers (workout target, streak/rep/effort tiers),
     // also imported by the Lambda — merged into config.json so pages read the same values.
     const lockinConfig = JSON.parse(
       fs.readFileSync(path.join(__dirname, '..', 'lambda', 'lockin-config.json'), 'utf8'),
