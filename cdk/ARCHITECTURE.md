@@ -1,8 +1,8 @@
 # Architecture
 
 Static pages with one shared event-based backend — a poll, a habit tracker and a spend
-tracker, kept apart by a `poll` id. One CDK stack (`Site`), region `ap-southeast-1`.
-The target account comes from whichever credentials you deploy with — it is not committed.
+tracker, kept apart by a `poll` id. One CDK stack (`Site`), account `761018890563`,
+region `ap-southeast-1`.
 
 This describes *this deployment*. For the generalized, reusable pattern behind
 it — and how to apply it to a different use case — see [../PLAYBOOK.md](../PLAYBOOK.md).
@@ -11,7 +11,7 @@ it — and how to apply it to a different use case — see [../PLAYBOOK.md](../P
 flowchart LR
   browser["Browser"]
 
-  subgraph aws["AWS · ap-southeast-1 · stack: Site"]
+  subgraph aws["AWS · 761018890563 · ap-southeast-1 · stack: Site"]
     direction TB
 
     subgraph bucket["SiteBucket — S3, public, static"]

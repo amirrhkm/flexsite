@@ -19,13 +19,13 @@ The generalized recipe is in **[PLAYBOOK.md](PLAYBOOK.md)**.
 
 ## Cloud architecture
 
-One CDK stack (`Site`), deployed to `ap-southeast-1`:
+One CDK stack (`Site`) — account `761018890563`, region `ap-southeast-1`:
 
 ```mermaid
 flowchart LR
   browser["Browser<br/>phone or desktop"]
 
-  subgraph aws["AWS · ap-southeast-1"]
+  subgraph aws["AWS · 761018890563 · ap-southeast-1"]
     direction TB
     subgraph s3["S3 SiteBucket — public, static"]
       pages["gokart-proposal.html<br/>lockin.html<br/>moware.html"]

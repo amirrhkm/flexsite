@@ -18,4 +18,4 @@ npm run destroy   # tear everything down
 
 Add a new plan page → drop `whatever.html` into `../plan/` → `npm run deploy` → share the link.
 
-Stack: `Site` · ap-southeast-1 · account from your deploy credentials
+Stack: `Site` · account 761018890563 · ap-southeast-1
