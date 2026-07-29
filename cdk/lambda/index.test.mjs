@@ -91,3 +91,29 @@ test('normalizeNote trims, caps at 80, and empties when absent', () => {
   assert.equal(normalizeNote(undefined), '');
   assert.equal(normalizeNote(42), '');
 });
+
+// A DynamoDB reserved word used bare in an UpdateExpression throws
+// ValidationException at runtime — invisible to unit tests, and it took a live
+// probe to find (`treat` broke every Moware transaction write). Any attribute
+// name here must be aliased via ExpressionAttributeNames.
+//
+// To check a new attribute name, probe it against the real table:
+//   aws dynamodb update-item --table-name <T> --key '<k>' \
+//     --update-expression 'SET <word> = :v' \
+//     --expression-attribute-values '{":v":{"S":"x"}}'
+// A "reserved keyword" ValidationException means it needs an alias.
+const VERIFIED_RESERVED = ['treat', 'name'];
+
+test('no UpdateExpression uses a known DynamoDB reserved word bare', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('./index.mjs', import.meta.url), 'utf8');
+  const exprs = [...src.matchAll(/UpdateExpression:\s*\n?\s*'([^']*)'/g)].map((m) => m[1]);
+  assert.ok(exprs.length >= 4, 'expected to find the UpdateExpressions, found ' + exprs.length);
+  const offenders = [];
+  for (const e of exprs) {
+    for (const w of VERIFIED_RESERVED) {
+      if (new RegExp('(^|[^#\\w])' + w + '\\s*=', 'i').test(e)) offenders.push(w + ' in: ' + e);
+    }
+  }
+  assert.deepEqual(offenders, []);
+});

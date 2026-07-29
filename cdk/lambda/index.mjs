@@ -206,7 +206,10 @@ export const handler = async (event) => {
           await ddb.send(new UpdateCommand({
             TableName: TABLE,
             Key: { poll, voter: 't#' + body.date + '#' + id },
-            UpdateExpression: 'SET amount = :a, category = :c, treat = :t, note = :n, createdAt = if_not_exists(createdAt, :u)',
+            // `treat` is a DynamoDB reserved word — it must be aliased or every
+            // transaction write fails with ValidationException.
+            UpdateExpression: 'SET amount = :a, category = :c, #tr = :t, note = :n, createdAt = if_not_exists(createdAt, :u)',
+            ExpressionAttributeNames: { '#tr': 'treat' },
             ExpressionAttributeValues: {
               ':a': amount, ':c': category, ':t': body.treat === true,
               ':n': normalizeNote(body.note), ':u': now,
