@@ -5,8 +5,8 @@
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
-    "deploy": "cdk deploy",
-    "destroy": "cdk destroy",
+    "deploy": "AWS_PROFILE=${AWS_PROFILE:-personal} cdk deploy",
+    "destroy": "AWS_PROFILE=${AWS_PROFILE:-personal} cdk destroy",
     "test": "node --test 'lambda/**/*.test.mjs'"
   },
   "devDependencies": {
