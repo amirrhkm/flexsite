@@ -21,15 +21,60 @@ The generalized recipe is in **[PLAYBOOK.md](PLAYBOOK.md)**.
 
 One CDK stack (`Site`) — account `761018890563`, region `ap-southeast-1`:
 
+```mermaid
+flowchart LR
+  browser["Browser<br/>phone or desktop"]
+
+  subgraph aws["AWS · 761018890563 · ap-southeast-1"]
+    direction TB
+    subgraph s3["S3 SiteBucket — public, static"]
+      pages["gokart-proposal.html<br/>lockin.html<br/>moware.html"]
+      cfg["config.json<br/>voteApiUrl + rule numbers"]
+    end
+    fn["VoteFn · Node 22<br/>Lambda Function URL<br/>no API Gateway"]
+    ddb[("DynamoDB VotesTable<br/>PK poll · SK varies<br/>provisioned 5/5")]
+  end
+
+  browser -->|"1. GET the page"| pages
+  browser -->|"2. GET config.json"| cfg
+  browser -->|"3. GET ?poll=id"| fn
+  browser -->|"4. POST poll + fields"| fn
+  fn -->|"Query / Update"| ddb
+
+  classDef store fill:#e8f1fb,stroke:#3d6fa5,color:#12314d
+  classDef comp fill:#eef7f2,stroke:#3f8f6b,color:#123a2a
+  class pages,cfg,ddb store
+  class fn comp
 ```
- Browser ── GET ─────────▶ S3 (public static website)
-   │                         ├─ <page>.html        ← synced from ../plan
-   │                         └─ config.json         ← { voteApiUrl, ...rule numbers }
-   │
-   ├── GET ?poll=<id> ─────▶ Lambda Function URL ──▶ VoteFn (Node 22)   (no API Gateway)
-   └── POST {…}       ─────▶          │
-                                      ▼
-                               DynamoDB VotesTable   (PK: poll · SK: voter/date)
+
+The four numbered steps are the entire client lifecycle: fetch the page, discover the
+endpoint, read state, write state. Step 2 is why endpoints are never hard-coded.
+
+**Reads and writes both return the same shape** — so a mutation needs no follow-up fetch:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant P as Page
+  participant F as Function URL
+  participant D as DynamoDB
+
+  Note over P: page load
+  P->>F: GET ?poll=id
+  F->>D: Query
+  D-->>F: raw items
+  F-->>P: derived state
+
+  Note over P: user taps something
+  P->>F: POST poll + op + fields
+  F->>D: Update
+  F->>D: Query
+  D-->>F: raw items
+  F-->>P: derived state (fresh)
+  Note over P,F: the POST reply IS the new state —<br/>never issue a second GET
+
+  Note over P: tab regains focus
+  P->>F: GET ?poll=id
 ```
 
 | Layer | Choice | Why, not the alternative |
