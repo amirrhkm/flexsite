@@ -28,7 +28,7 @@ flowchart LR
   subgraph aws["AWS · 761018890563 · ap-southeast-1"]
     direction TB
     subgraph s3["S3 SiteBucket — public, static"]
-      pages["gokart-proposal.html<br/>lockin.html<br/>moware.html"]
+      pages["gokart-proposal.html<br/>lockin.html"]
       cfg["config.json<br/>voteApiUrl + rule numbers"]
     end
     fn["VoteFn · Node 22<br/>Lambda Function URL<br/>no API Gateway"]
@@ -98,7 +98,7 @@ Full detail: **[cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md)**.
 
 ## What's in here
 
-### The three sites
+### The live sites
 
 Each is one self-contained HTML file, sharing the same Lambda and the same DynamoDB table —
 kept apart by a `poll` id, so a new use case is a new file and a new id, nothing more.
@@ -107,16 +107,28 @@ kept apart by a `poll` id, so a new use case is a new file and a new id, nothing
 |---|---|---|
 | **`plan/gokart-proposal.html`** | per-poll | A friends' go-kart poll — pick a date and a track, see everyone's votes laid out as a starting grid. |
 | **`plan/lockin.html`** | `lockin` | *Lock In* — a private habit tracker. Prayer, sober and workout streaks with progress rings, a permanent medal bank, and an urge tool that prescribes push-ups. |
-| **`plan/moware.html`** | `moware` | *Moware* ("money aware") — a private spend tracker. Log a purchase with category and remarks, see where the month went on a donut and a receipt-tape ledger. |
 
-The two trackers are single-user and private; the poll is meant to be shared. None of them
-have auth — see [cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md) for that trade-off.
+Lock In is single-user and private; the poll is meant to be shared. Neither has auth — see
+[cdk/ARCHITECTURE.md](cdk/ARCHITECTURE.md) for that trade-off.
+
+### Retired: Moware
+
+*Moware* ("money aware") was a private spend tracker on the same backend — transactions with
+categories and remarks, a monthly donut, a receipt-tape ledger, and subscription periods derived
+per month. **Retired in August 2026** in favour of an off-the-shelf app; the page and its data
+are gone.
+
+The **backend is deliberately kept**: `lambda/moware.mjs` and its tests still ship, as does the
+`moware` branch in `index.mjs`. It is the reference implementation for two things this pattern
+leans on — month-prefixed sort keys with `begins_with`, and deriving recurring items instead of
+materialising them. The design record is in `docs/superpowers/`. Reviving it means restoring one
+HTML file.
 
 ### The rest
 
 - **`cdk/`** — the stack (`lib/site-stack.ts`), the single Lambda (`lambda/index.mjs`), the
   pure unit-tested derivation modules (`lambda/tracker.mjs` for Lock In, `lambda/moware.mjs`
-  for Moware), and Lock In's shared rule config (`lambda/lockin-config.json`).
+  retained from Moware), and Lock In's shared rule config (`lambda/lockin-config.json`).
 - **`docs/superpowers/`** — the specs and implementation plans behind each feature.
 
 ```

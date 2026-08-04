@@ -1,8 +1,11 @@
 # Architecture
 
-Static pages with one shared event-based backend — a poll, a habit tracker and a spend
-tracker, kept apart by a `poll` id. One CDK stack (`Site`), account `761018890563`,
-region `ap-southeast-1`.
+Static pages with one shared event-based backend — a poll and a habit tracker, kept apart by
+a `poll` id. One CDK stack (`Site`), account `761018890563`, region `ap-southeast-1`.
+
+A third page, *Moware* (a spend tracker), was retired in August 2026: its HTML and its data
+are gone, but its backend branch and derivation module are deliberately retained. It appears
+below as **retired** wherever it is still part of the code.
 
 This describes *this deployment*. For the generalized, reusable pattern behind
 it — and how to apply it to a different use case — see [../PLAYBOOK.md](../PLAYBOOK.md).
@@ -15,7 +18,7 @@ flowchart LR
     direction TB
 
     subgraph bucket["SiteBucket — S3, public, static"]
-      html["gokart-proposal.html<br/>lockin.html<br/>moware.html<br/><i>synced from ../plan</i>"]
+      html["gokart-proposal.html<br/>lockin.html<br/><i>synced from ../plan</i>"]
       cfg["config.json<br/><i>generated at deploy</i>"]
     end
 
@@ -35,23 +38,25 @@ flowchart LR
   class fn comp
 ```
 
-One handler serves all three use cases, branching on the `poll` id — and each branch owns a
-pure, unit-tested derivation module:
+One handler serves every use case, branching on the `poll` id — and each branch owns a pure,
+unit-tested derivation module:
 
 ```mermaid
 flowchart LR
   req["request<br/>poll = ?"]
 
   req -->|"lockin"| tr["tracker branch"]
-  req -->|"moware"| mw["moware branch"]
   req -->|"any other id"| gk["poll / RSVP branch"]
+  req -->|"moware"| mw["moware branch<br/><i>retired page, live code</i>"]
 
   tr --> trm["tracker.mjs<br/>streaks · medals · badges"]
-  mw --> mwm["moware.mjs<br/>subActive · computeMonth"]
   gk --> gkm["inline in index.mjs<br/>tally by track and date"]
+  mw --> mwm["moware.mjs<br/>subActive · computeMonth"]
 
   classDef pure fill:#eef7f2,stroke:#3f8f6b,color:#123a2a
-  class trm,mwm,gkm pure
+  classDef dim fill:#f2f3f5,stroke:#9aa3ad,color:#4a5259
+  class trm,gkm pure
+  class mw,mwm dim
 ```
 
 The single table is multi-tenant by partition, and each tenant chooses its own sort-key
@@ -63,12 +68,17 @@ flowchart TB
     direction TB
     p1["poll = any poll id<br/>SK: voter<br/><i>one item per person</i>"]
     p2["poll = lockin<br/>SK: YYYY-MM-DD<br/><i>one item per day</i>"]
-    p3["poll = moware<br/>SK: t#date#id · s#id · meta#categories<br/><i>many items, prefix-scoped by month</i>"]
+    p3["poll = moware — retired, no items<br/>SK: t#date#id · s#id · meta#categories<br/><i>many items, prefix-scoped by month</i>"]
   end
 
   classDef part fill:#e8f1fb,stroke:#3d6fa5,color:#12314d
-  class p1,p2,p3 part
+  classDef gone fill:#f2f3f5,stroke:#9aa3ad,color:#4a5259
+  class p1,p2 part
+  class p3 gone
 ```
+
+The third shape is kept in this diagram on purpose: it is the only worked example of a tenant
+whose data grows without bound, and the reason `begins_with` prefix-scoping exists here.
 
 ## Components
 
@@ -92,7 +102,10 @@ so a write never needs a follow-up read.
 |---|---|---|
 | any poll id | `{ votes[], tracks{}, dates{} }` | `{poll, voter, track, dates[]}` → upsert |
 | `lockin` | `{ days[], today, summary }` | one day's ticks (today or yesterday MYT only) |
-| `moware` | `{ month, today, categories, subs, summary }` | `op`: `txn` / `delTxn` / `sub` / `cancelSub` |
+| `moware` *(retired)* | `{ month, today, categories, subs, summary }` | `op`: `txn` / `delTxn` / `sub` / `cancelSub` |
+
+The `moware` branch still answers — with an empty month, since its items were deleted. No page
+calls it.
 
 Shared item semantics:
 
@@ -128,11 +141,11 @@ that would outlive the 12-month free tier.
 
 ## Trade-offs (accepted)
 
-- Endpoint is public and unauthenticated — anyone with the link can read or write any
-  tenant: overwrite a vote by name, tick a habit, or log a spend. Accepted for a private
-  share link; for the spend log it was a considered decision rather than an inherited one
-  (see the Moware spec's "Accepted risk"). The mitigation, if ever needed, is a
-  shared-secret header — not Cognito.
+- Endpoint is public and unauthenticated — anyone with the link can read or write any tenant:
+  overwrite a vote by name, or tick a habit. Accepted for a private share link. It was weighed
+  most carefully for the retired spend log, where the data was more sensitive (see that spec's
+  "Accepted risk"); if a future use case carries data that would hurt to leak, this is the wrong
+  pattern. The mitigation, if ever needed, is a shared-secret header — not Cognito.
 - S3 website endpoint is HTTP-only; share the HTTPS object URL
   (`https://<bucket>.s3.<region>.amazonaws.com/<page>.html`) instead.
 - `Scan`-free but `Query`-per-request reads: state is recomputed on every call.

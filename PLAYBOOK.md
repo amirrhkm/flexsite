@@ -23,8 +23,8 @@ Fits when all of these are true:
 **A page can carry a lot more interaction than the pattern first appears to
 allow.** The original framing here was "mostly static, with one or two actions on
 top". Lock In has five prayer toggles, two habit toggles, an urge flow, two tabs
-and history calendars; Moware has four write operations, a chart with two views
-and a month stepper. Both are still one static file and one Lambda branch. The
+and history calendars; Moware had four write operations, a chart with two views
+and a month stepper. Both were still one static file and one Lambda branch. The
 real limit is not the number of actions — it's whether the data stays small,
 single-writer, and refreshable on action.
 
@@ -69,7 +69,9 @@ until there's real data:
 | One item per day (habit tracker) | ISO date | query the whole partition — 365/year is nothing |
 | **Many items per period, growing forever** (a spend log) | `t#<ISO date>#<id>` | `begins_with("t#<YYYY-MM>")` — one month, never the whole history |
 
-Two things the third shape buys, both proven in `plan/moware.html`:
+Two things the third shape buys, both proven by Moware — a spend tracker retired in August
+2026, whose page is gone but whose backend (`cdk/lambda/moware.mjs`, its tests, and the
+`moware` branch in `index.mjs`) is kept precisely as the worked example:
 
 - **Prefix-scoped reads.** Embedding the date in the sort key makes a month a
   `begins_with` query, already in chronological order. A full-partition query
